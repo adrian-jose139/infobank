@@ -247,6 +247,29 @@ export default function AdminDashboard() {
   const [categoria, setCategoria] = useState("");
   const [autor, setAutor] = useState("");
   const [fechaPublicacion, setFechaPublicacion] = useState("");
+  const [imagenUrl, setImagenUrl] = useState("");
+  const [previewNoticia, setPreviewNoticia] = useState("");
+  const [editarNoticiaId, setEditarNoticiaId] = useState(null);
+
+  const [editando, setEditando] = useState(false);
+  const [idEditando, setIdEditando] = useState(null);
+
+  // 🔹 Categorías predefinidas para el acordeón
+const categoriasBanco = [
+  "Corporativas",
+  "Productos y Servicios",
+  "Educación Financiera",
+  "Tecnología e Innovación",
+  "Recursos Humanos",
+  "Comunicados Urgentes",
+  "Eventos y Promociones",
+];
+
+// 🔹 Estado del acordeón de categorías
+const [mostrarAcordeon, setMostrarAcordeon] = useState(false);
+
+
+  
 
   //===== Muro informativo
   const [tituloMuro, setTituloMuro] = useState("");
@@ -304,24 +327,124 @@ export default function AdminDashboard() {
   const noticiasPublicadas = noticias.length;
   const muroInformativoPublicados = muroInformativo.length;
 
-  // ===== publicar noticia
-  const publicarNoticia = async () => {
-    if (!tituloNoticia || !contenidoNoticia) {
-      return Swal.fire("Campos incompletos", "Completa todos los campos.", "warning");
-    }
+  
+
+  // 📌 Crear noticia
+const publicarNoticia = async () => {
+  if (!tituloNoticia || !contenidoNoticia) {
+    Swal.fire("Campos incompletos", "Ingresa título y contenido", "warning");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "noticias"), {
+      titulo: tituloNoticia,
+      descripcion: contenidoNoticia,
+      imagen,
+      categoria,
+      autor,
+      fechaPublicacion: fechaPublicacion
+        ? new Date(fechaPublicacion)
+        : serverTimestamp(),
+      creadaEn: serverTimestamp(),
+    });
+
+    Swal.fire("Publicado", "La noticia se publicó correctamente", "success");
+    limpiarFormulario();
+  } catch (error) {
+    console.error("Error al publicar noticia:", error);
+    Swal.fire("Error", "No se pudo publicar la noticia", "error");
+  }
+};
+
+// 📌 Leer noticias (en tiempo real)
+useEffect(() => {
+  const q = query(collection(db, "noticias"), orderBy("fechaPublicacion", "desc"));
+  const unsub = onSnapshot(q, (snap) => {
+    const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    setNoticias(data);
+  });
+  return () => unsub();
+}, []);
+
+// 📌 Editar noticia
+const editarNoticia = (n) => {
+  setEditando(n);
+  setIdEditando(n.id);
+  setTituloNoticia(n.titulo);
+  setContenidoNoticia(n.descripcion || n.contenido);
+  setImagen(n.imagen);
+  setPreview(n.imagen);
+  setCategoria(n.categoria);
+  setAutor(n.autor);
+  setFechaPublicacion(
+    n.fechaPublicacion?.toDate
+      ? n.fechaPublicacion.toDate().toISOString().split("T")[0]
+      : ""
+  );
+};
+
+// 📌 Actualizar noticia
+const actualizarNoticia = async () => {
+  if (!editarNoticiaId) return;
+
+  try {
+    await updateDoc(doc(db, "noticias", editarNoticiaId), {
+      titulo: tituloNoticia,
+      descripcion: contenidoNoticia,
+      imagen: imagen,
+      categoria: categoria,
+      autor: autor,
+      fechaPublicacion: fechaPublicacion
+        ? new Date(fechaPublicacion)
+        : serverTimestamp(),
+    });
+
+    Swal.fire("Actualizada", "La noticia fue actualizada correctamente", "success");
+    limpiarFormulario();
+  } catch (error) {
+    console.error("Error al actualizar noticia:", error);
+    Swal.fire("Error", "No se pudo actualizar la noticia", "error");
+  }
+};
+
+// 📌 Eliminar noticia
+const eliminarNoticia = async (id) => {
+  const confirm = await Swal.fire({
+    title: "¿Eliminar noticia?",
+    text: "Esta acción no se puede deshacer",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (confirm.isConfirmed) {
     try {
-      await addDoc(collection(db, "noticias"), {
-        titulo: tituloNoticia,
-        descripcion: contenidoNoticia,
-        fecha: serverTimestamp(),
-      });
-      Swal.fire("✅ Noticia publicada", "", "success");
-      setTituloNoticia("");
-      setContenidoNoticia("");
-    } catch (err) {
-      Swal.fire("❌ Error", "No se pudo publicar la noticia", "error");
+      await deleteDoc(doc(db, "noticias", id));
+      Swal.fire("Eliminada", "La noticia fue eliminada", "success");
+    } catch (error) {
+      console.error("Error al eliminar:", error);
+      Swal.fire("Error", "No se pudo eliminar la noticia", "error");
     }
-  };
+  }
+};
+
+// 📌 Cancelar edición / limpiar formulario
+const limpiarFormulario = () => {
+  setTituloNoticia("");
+  setContenidoNoticia("");
+  setImagen("");
+  setPreview("");
+  setCategoria("");
+  setAutor("");
+  setFechaPublicacion("");
+  setEditando(false);
+  setIdEditando(null);
+};
+
+const cancelarEdicion = () => limpiarFormulario();
+
   // ===== publicar mensaje muro informativo
   const publicarMuroInformativo = async () => {
     if (!tituloMuro || !contenidoMuro) {
@@ -332,6 +455,10 @@ export default function AdminDashboard() {
         titulo: tituloMuro,
         descripcion: contenidoMuro,
         fecha: serverTimestamp(),
+        mensaje: `${tituloMuro}\n\n${contenidoMuro}`,
+        prioridad: "",
+
+
       });
       Swal.fire("✅ Mensaje publicado", "", "success");
       setTituloMuro("");
@@ -933,65 +1060,249 @@ export default function AdminDashboard() {
           </section>
         )}
 
-        {/* ===== NOTICIAS ===== */}
-        {tab === "noticias" && (
-          <section className="users">
-            <div className="courses__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2>Gestion de Noticias</h2>
-            </div>
-            <div className="add-course">
-              <h2>➕ Publicar nueva noticia</h2>
-              <form onSubmit={(e) => { e.preventDefault(); publicarNoticia(); }} className="form">
-                <input
-                  type="text"
-                  placeholder="Título de la noticia"
-                  value={tituloNoticia}
-                  onChange={(e) => setTituloNoticia(e.target.value)}
-                />
-                <textarea
-                  placeholder="Contenido de la noticia"
-                  value={contenidoNoticia}
-                  onChange={(e) => setContenidoNoticia(e.target.value)}
-                />
-                <input type="text"
-                  placeholder="URL de imagen (opcional)"
-                  value={imagen}
-                  onChange={(e) => setImagen(e.target.value)}
-                />
-                <input type="text"
-                  placeholder="Categoria"
-                  value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
-                />
-                <input type="text"
-                  placeholder="Autor"
-                  value={autor}
-                  onChange={(e) => setAutor(e.target.value)}
-                />
-                <input type="date"
-                  placeholder="Fecha de publicación"
-                  value={fechaPublicacion}
-                  onChange={(e) => setFechaPublicacion(e.target.value)}
-                />
-                <button type="submit" className="btn btn--save">
-                  Publicar Noticia
-                </button>
-              </form>
-            </div>
+       {/* ===== NOTICIAS ===== */}
+{tab === "noticias" && (
+  <section className="users">
+    <div
+      className="courses__header"
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+    >
+      <h2>Gestión de Noticias</h2>
+    </div>
 
-            <div className="course-list">
-              {noticias.map((n) => (
-                <div key={n.id} className="course-card">
-                  <div>
-                    <h3>{n.titulo}</h3>
-                    <p>{n.descripcion}</p>
-                    <small>Publicado el: {n.fecha?.toDate?.().toLocaleDateString?.() || "—"}</small>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+    {/* FORMULARIO DE PUBLICACIÓN / EDICIÓN */}
+    <div className="add-course">
+      <h2>{editarNoticiaId ? "✏️ Editar noticia" : "➕ Publicar nueva noticia"}</h2>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (editarNoticiaId) {
+             actualizarNoticia();
+           }else{
+             publicarNoticia();
+           }
+        }}
+        className="form"
+      >
+        <input
+          type="text"
+          placeholder="Título de la noticia"
+          value={tituloNoticia}
+          onChange={(e) => setTituloNoticia(e.target.value)}
+          required
+        />
+        <textarea
+          placeholder="Contenido de la noticia"
+          value={contenidoNoticia}
+          onChange={(e) => setContenidoNoticia(e.target.value)}
+          required
+        />
+        <input
+          type="text"
+          placeholder="URL de imagen (opcional)"
+          value={imagen}
+          onChange={(e) => {
+            setImagen(e.target.value);
+            setPreview(e.target.value);
+          }}
+        />
+
+        {preview && (
+          <img
+            src={preview}
+            alt="Vista previa"
+            style={{
+              width: 250,
+              borderRadius: 8,
+              marginTop: 10,
+              border: "1px solid #ccc",
+            }}
+          />
         )}
+
+        {/* 🔽 Selector de Categoría con Acordeón */}
+<div className="categoria-selector" style={{ position: "relative" }}>
+  <input
+    type="text"
+    placeholder="Seleccionar categoría"
+    value={categoria}
+    readOnly
+    onClick={() => setMostrarAcordeon(!mostrarAcordeon)}
+    style={{
+      cursor: "pointer",
+      backgroundColor: "#fff",
+      border: "1px solid #ccc",
+      padding: "8px",
+      borderRadius: "6px",
+      width: "100%",
+    }}
+  />
+
+  {mostrarAcordeon && (
+    <div
+      className="acordeon-categorias"
+      style={{
+        position: "absolute",
+        top: "100%",
+        left: 0,
+        right: 0,
+        backgroundColor: "#f9f9f9",
+        border: "1px solid #ccc",
+        borderRadius: "6px",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+        zIndex: 1000,
+        maxHeight: "200px",
+        overflowY: "auto",
+        marginTop: "4px",
+      }}
+    >
+      {categoriasBanco.map((cat, index) => (
+        <div
+          key={index}
+          onClick={() => {
+            setCategoria(cat);
+            setMostrarAcordeon(false); // 🔹 cierra el acordeón al seleccionar
+          }}
+          style={{
+            padding: "10px",
+            cursor: "pointer",
+            borderBottom: "1px solid #eee",
+            backgroundColor: categoria === cat ? "#e0f7fa" : "transparent",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = "#f0f0f0")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor =
+              categoria === cat ? "#e0f7fa" : "transparent")
+          }
+        >
+          {cat}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+
+           <input
+      type="text"
+      value="Administrador"
+      readOnly
+      style={{
+        backgroundColor: "#f3f3f3",
+        border: "1px solid #ccc",
+        padding: "8px",
+        borderRadius: "6px",
+        width: "100%",
+        color: "#555",
+        cursor: "not-allowed",
+      }}
+    />
+        <input
+          type="date"
+          value={fechaPublicacion}
+          onChange={(e) => setFechaPublicacion(e.target.value)}
+        />
+
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button type="submit" className="btn btn--save">
+            {editarNoticiaId ? "Actualizar Noticia" : "Publicar Noticia"}
+          </button>
+
+          {editarNoticiaId && (
+            <button
+              type="button"
+              onClick={cancelarEdicion}
+              className="btn btn--cancel"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+
+    {/* LISTADO DE NOTICIAS */}
+    <div className="news-list">
+      {noticias.length === 0 ? (
+        <p className="text-center text-gray-500 mt-4">
+          No hay noticias publicadas.
+        </p>
+      ) : (
+        noticias.map((n) => {
+          const imagenSrc =
+            n.imagen && n.imagen.startsWith("http")
+              ? n.imagen
+              : "https://via.placeholder.com/300x200?text=Sin+imagen";
+
+          return (
+            <div key={n.id} className="course-card">
+              <div className="news-image-container">
+                <img
+                  src={imagenSrc}
+                  alt={n.titulo}
+                  className="news-image"
+                  onError={(e) =>
+                    (e.target.src =
+                      "https://via.placeholder.com/300x200?text=No+disponible")
+                  }
+                />
+              </div>
+
+              <div className="news-info">
+                <h3 className="news-title">{n.titulo}</h3>
+                <span className="news-tag">{n.categoria || "General"}</span>
+                <p className="news-description">{n.descripcion}</p>
+
+                <div className="news-meta">
+                  <span className="news-date">
+                    📅{" "}
+                    {n.fechaPublicacion?.toDate?.().toLocaleDateString?.(
+                      "es-ES",
+                      { year: "numeric", month: "2-digit", day: "2-digit" }
+                    ) || "—"}
+                  </span>
+                  <span className="news-author">
+                    👤 {n.autor || "Administrador"}
+                  </span>
+                </div>
+
+                <div className="news-actions">
+                  <button
+                    className="btn btn--edit"
+                    onClick={() => editarNoticia(n)}
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    className="btn btn--delete"
+                    onClick={() => eliminarNoticia(n.id)}
+                  >
+                    🗑️ Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  </section>
+)}
+
+
+
+            
+
+
+
+
+         
 
         {/* ===== MURO INFORMÁTIVO ===== */}
         {tab === "muro" && (
