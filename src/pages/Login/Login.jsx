@@ -3,13 +3,14 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  signOut, // Importamos signOut para la lógica de bloqueo
 } from "firebase/auth";
 import { auth, db } from "../../firebaseConfig"; // Asegúrate de que la ruta sea correcta
 import { useNavigate, Link } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
-import Swal from "sweetalert2"; // ✅ Para los cuadros emergentes
-import infobankLogo from "../../assets/infobank-logo.png"; // Asegúrate de tener el logo en assets
-import "../../App.css"; // Asegúrate de tener tu estilo global aquí
+import Swal from "sweetalert2";
+import infobankLogo from "../../assets/infobank-logo.png";
+import "../../App.css";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,55 +19,89 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Redirección automática si ya hay sesión activa
+  // --- Nueva Función Reutilizable ---
+  // Esta función revisa el ROL y el ESTADO de un usuario
+  // buscando en la colección "usuarios"
+  const checkUserRoleAndStatus = async (user) => {
+    try {
+      // ✅ CORRECCIÓN: Apuntamos a "usuarios" en lugar de "roles"
+      const userDocRef = doc(db, "usuarios", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        // Si no existe el documento del usuario, no tiene permisos
+        await signOut(auth);
+        Swal.fire(
+          "Error",
+          "No tienes permisos asignados o tu usuario no existe.",
+          "error"
+        );
+        return;
+      }
+
+      const userData = userDocSnap.data();
+
+      // --- CAPA 1: Lógica de Bloqueo ---
+      // Comprobamos el campo "estado" (en minúsculas por si acaso)
+      if (userData.estado?.toLowerCase() === "bloqueado") {
+        await signOut(auth); // Cerramos la sesión
+        Swal.fire(
+          "Acceso Denegado",
+          "Tu cuenta ha sido bloqueada. Contacta al administrador.",
+          "error"
+        );
+        return; // Detenemos la ejecución
+      }
+      // --- Fin de Lógica de Bloqueo ---
+
+      // Si pasa el chequeo, redirigimos según el rol
+      if (userData.rol === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      console.error("Error al obtener el rol/estado:", err);
+      // Si hay un error de permisos leyendo el documento, lo expulsamos
+      await signOut(auth);
+    }
+  };
+
+  // ✅ Redirección automática (usa la nueva función)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        try {
-          const rolRef = doc(db, "roles", user.uid);
-          const rolSnap = await getDoc(rolRef);
-
-          if (rolSnap.exists() && rolSnap.data().rol === "admin") {
-            navigate("/admin");
-          } else {
-            navigate("/dashboard");
-          }
-        } catch (err) {
-          console.error("Error al obtener el rol:", err);
-        }
+        // Si hay sesión, chequeamos su rol y estado
+        await checkUserRoleAndStatus(user);
       }
     });
     return () => unsubscribe();
   }, [navigate]);
 
-  // ✅ Inicio de sesión
+  // ✅ Inicio de sesión (usa la nueva función)
   const handleLogin = async (e) => {
     e.preventDefault();
     setMensaje("");
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
 
-      const rolRef = doc(db, "roles", user.uid);
-      const rolSnap = await getDoc(rolRef);
-
-      if (rolSnap.exists() && rolSnap.data().rol === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/dashboard");
-      }
-
-      setMensaje("✅ Inicio de sesión exitoso");
+      // Después de iniciar sesión, chequeamos su rol y estado
+      await checkUserRoleAndStatus(user);
     } catch (error) {
       console.error(error);
-      setMensaje("❌ Error: " + error.message);
+      setMensaje("❌ Error: Email o contraseña incorrectos.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Recuperar contraseña con SweetAlert2
+  // ✅ Recuperar contraseña (sin cambios)
   const handleOlvidarContrasena = async () => {
     const { value: correo } = await Swal.fire({
       title: "🔑 Recuperar contraseña",
@@ -125,7 +160,6 @@ export default function Login() {
             required
           />
 
-          {/* 🔗 Enlace de recuperación */}
           <p className="forgot-password" onClick={handleOlvidarContrasena}>
             ¿Olvidaste tu contraseña?
           </p>

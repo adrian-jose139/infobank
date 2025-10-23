@@ -18,7 +18,7 @@ import {
   sendEmailVerification,
   signOut,
 } from "firebase/auth";
-import { auth, db } from "../../firebaseConfig";
+import { auth, db, storage } from "../../firebaseConfig";
 import { useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -250,39 +250,57 @@ export default function AdminDashboard() {
   const [imagenUrl, setImagenUrl] = useState("");
   const [previewNoticia, setPreviewNoticia] = useState("");
   const [editarNoticiaId, setEditarNoticiaId] = useState(null);
+  const [editando, setEditando] = useState(false); // Boolean for edit mode
 
-  const [editando, setEditando] = useState(false);
-  const [idEditando, setIdEditando] = useState(null);
 
   // 🔹 Categorías predefinidas para el acordeón
-const categoriasBanco = [
-  "Corporativas",
-  "Productos y Servicios",
-  "Educación Financiera",
-  "Tecnología e Innovación",
-  "Recursos Humanos",
-  "Comunicados Urgentes",
-  "Eventos y Promociones",
-];
+  const categoriasBanco = [
+    "Corporativas",
+    "Productos y Servicios",
+    "Educación Financiera",
+    "Tecnología e Innovación",
+    "Recursos Humanos",
+    "Comunicados Urgentes",
+    "Eventos y Promociones",
+  ];
 
-// 🔹 Estado del acordeón de categorías
-const [mostrarAcordeon, setMostrarAcordeon] = useState(false);
+  // 🔹 Estado del acordeón de categorías
+  const [mostrarAcordeon, setMostrarAcordeon] = useState(false);
 
 
-  
+
+
 
   //===== Muro informativo
   const [tituloMuro, setTituloMuro] = useState("");
   const [contenidoMuro, setContenidoMuro] = useState("");
   const [muroInformativo, setMuroInformativo] = useState([]);
+  const [editarMuroId, setEditarMuroId] = useState(null);
+  const [editandoMuro, setEditandoMuro] = useState(false); // Boolean for edit mode
+  const [visualMuro, setVisualMuro] = useState("lista"); // "lista" o "formulario"
+  const [categoriaMuro, setCategoriaMuro] = useState("");
+  const [mostrarAcordeonMuro, setMostrarAcordeonMuro] = useState(false);
+  const [imagenurl, setImagenurl] = useState("");
+
+  const categoriasMuro = [
+    "Anuncios Generales",
+    "Eventos Internos",
+    "Actualizaciones Operativas",
+    "Reconocimientos y Logros",
+    "Salud y Bienestar",
+    "Capacitaciones y Desarrollo",
+  ];
 
   // ===== Listeners
   useEffect(() => {
-    const unsubNoticias = onSnapshot(collection(db, "noticias"), (snap) => {
-      setNoticias(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
+    const unsubNoticias = onSnapshot(
+      query(collection(db, "noticias"), orderBy("fechaPublicacion", "desc")),
+      (snap) => {
+        setNoticias(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      }
+    );
 
-    const unsubMuroInformativo = onSnapshot(collection(db, "muro informativo"), (snap) => {
+    const unsubMuroInformativo = onSnapshot(collection(db, "muro"), (snap) => {
       setMuroInformativo(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
     return () => {
@@ -327,146 +345,228 @@ const [mostrarAcordeon, setMostrarAcordeon] = useState(false);
   const noticiasPublicadas = noticias.length;
   const muroInformativoPublicados = muroInformativo.length;
 
-  
+
 
   // 📌 Crear noticia
-const publicarNoticia = async () => {
-  if (!tituloNoticia || !contenidoNoticia) {
-    Swal.fire("Campos incompletos", "Ingresa título y contenido", "warning");
-    return;
-  }
-
-  try {
-    await addDoc(collection(db, "noticias"), {
-      titulo: tituloNoticia,
-      descripcion: contenidoNoticia,
-      imagen,
-      categoria,
-      autor,
-      fechaPublicacion: fechaPublicacion
-        ? new Date(fechaPublicacion)
-        : serverTimestamp(),
-      creadaEn: serverTimestamp(),
-    });
-
-    Swal.fire("Publicado", "La noticia se publicó correctamente", "success");
-    limpiarFormulario();
-  } catch (error) {
-    console.error("Error al publicar noticia:", error);
-    Swal.fire("Error", "No se pudo publicar la noticia", "error");
-  }
-};
-
-// 📌 Leer noticias (en tiempo real)
-useEffect(() => {
-  const q = query(collection(db, "noticias"), orderBy("fechaPublicacion", "desc"));
-  const unsub = onSnapshot(q, (snap) => {
-    const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    setNoticias(data);
-  });
-  return () => unsub();
-}, []);
-
-// 📌 Editar noticia
-const editarNoticia = (n) => {
-  setEditando(n);
-  setIdEditando(n.id);
-  setTituloNoticia(n.titulo);
-  setContenidoNoticia(n.descripcion || n.contenido);
-  setImagen(n.imagen);
-  setPreview(n.imagen);
-  setCategoria(n.categoria);
-  setAutor(n.autor);
-  setFechaPublicacion(
-    n.fechaPublicacion?.toDate
-      ? n.fechaPublicacion.toDate().toISOString().split("T")[0]
-      : ""
-  );
-};
-
-// 📌 Actualizar noticia
-const actualizarNoticia = async () => {
-  if (!editarNoticiaId) return;
-
-  try {
-    await updateDoc(doc(db, "noticias", editarNoticiaId), {
-      titulo: tituloNoticia,
-      descripcion: contenidoNoticia,
-      imagen: imagen,
-      categoria: categoria,
-      autor: autor,
-      fechaPublicacion: fechaPublicacion
-        ? new Date(fechaPublicacion)
-        : serverTimestamp(),
-    });
-
-    Swal.fire("Actualizada", "La noticia fue actualizada correctamente", "success");
-    limpiarFormulario();
-  } catch (error) {
-    console.error("Error al actualizar noticia:", error);
-    Swal.fire("Error", "No se pudo actualizar la noticia", "error");
-  }
-};
-
-// 📌 Eliminar noticia
-const eliminarNoticia = async (id) => {
-  const confirm = await Swal.fire({
-    title: "¿Eliminar noticia?",
-    text: "Esta acción no se puede deshacer",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Sí, eliminar",
-    cancelButtonText: "Cancelar",
-  });
-
-  if (confirm.isConfirmed) {
-    try {
-      await deleteDoc(doc(db, "noticias", id));
-      Swal.fire("Eliminada", "La noticia fue eliminada", "success");
-    } catch (error) {
-      console.error("Error al eliminar:", error);
-      Swal.fire("Error", "No se pudo eliminar la noticia", "error");
+  const publicarNoticia = async () => {
+    if (!tituloNoticia || !contenidoNoticia) {
+      Swal.fire("Campos incompletos", "Ingresa título y contenido", "warning");
+      return;
     }
-  }
-};
 
-// 📌 Cancelar edición / limpiar formulario
-const limpiarFormulario = () => {
-  setTituloNoticia("");
-  setContenidoNoticia("");
-  setImagen("");
-  setPreview("");
-  setCategoria("");
-  setAutor("");
-  setFechaPublicacion("");
-  setEditando(false);
-  setIdEditando(null);
-};
+    // if (imagenUrl && !isValidUrl(imagenUrl)) {
+    //   Swal.fire("URL de imagen no válida", "Debe comenzar con http:// o https://", "warning");
+    //   return;
+    // }
 
-const cancelarEdicion = () => limpiarFormulario();
-
-  // ===== publicar mensaje muro informativo
-  const publicarMuroInformativo = async () => {
-    if (!tituloMuro || !contenidoMuro) {
-      return Swal.fire("Campos incompletos", "Completa todos los campos.", "warning");
-    }
     try {
-      await addDoc(collection(db, "muro informativo"), {
-        titulo: tituloMuro,
-        descripcion: contenidoMuro,
-        fecha: serverTimestamp(),
-        mensaje: `${tituloMuro}\n\n${contenidoMuro}`,
-        prioridad: "",
-
-
+      await addDoc(collection(db, "noticias"), {
+        titulo: tituloNoticia,
+        descripcion: contenidoNoticia,
+        imagen: imagenUrl || "",
+        categoria: categoria || "General",
+        autor: autor || "Administrador",
+        fechaPublicacion: fechaPublicacion ? new Date(fechaPublicacion) : serverTimestamp(),
+        creadaEn: serverTimestamp(),
       });
-      Swal.fire("✅ Mensaje publicado", "", "success");
-      setTituloMuro("");
-      setContenidoMuro("");
-    } catch (err) {
-      Swal.fire("❌ Error", "No se pudo publicar el mensaje", "error");
+
+      Swal.fire("Publicado", "La noticia se publicó correctamente", "success");
+      limpiarFormulario();
+    } catch (error) {
+      console.error("Error al publicar noticia:", error);
+      Swal.fire("Error", "No se pudo publicar la noticia", "error");
     }
   };
+
+  // 📌 Editar noticia
+  const editarNoticia = (n) => {
+    setEditando(true);
+    setEditarNoticiaId(n.id);
+    setTituloNoticia(n.titulo || "");
+    setContenidoNoticia(n.descripcion || n.contenido || "");
+    setImagenUrl(n.imagen || "");
+    setPreviewNoticia(n.imagen || "");
+    setCategoria(n.categoria || "");
+    setAutor(n.autor || "Administrador");
+    setFechaPublicacion(
+      n.fechaPublicacion?.toDate
+        ? n.fechaPublicacion.toDate().toISOString().split("T")[0]
+        : ""
+    );
+  };
+
+
+  // 📌 Actualizar noticia
+  const actualizarNoticia = async () => {
+    if (!editarNoticiaId) return;
+
+    if (!tituloNoticia || !contenidoNoticia) {
+      Swal.fire("Campos incompletos", "Ingresa título y contenido", "warning");
+      return;
+    }
+
+    // if (imagenUrl && !isValidUrl(imagenUrl)) {
+    //   Swal.fire("URL de imagen no válida", "Debe comenzar con http:// o https://", "warning");
+    //   return;
+    // }
+
+    try {
+      await updateDoc(doc(db, "noticias", editarNoticiaId), {
+        titulo: tituloNoticia,
+        descripcion: contenidoNoticia,
+        imagen: imagenUrl || "",
+        categoria: categoria || "General",
+        autor: autor || "Administrador",
+        fechaPublicacion: fechaPublicacion ? new Date(fechaPublicacion) : serverTimestamp(),
+      });
+
+      Swal.fire("Actualizada", "La noticia fue actualizada correctamente", "success");
+      limpiarFormulario();
+    } catch (error) {
+      console.error("Error al actualizar noticia:", error);
+      Swal.fire("Error", "No se pudo actualizar la noticia", "error");
+    }
+  };
+
+  // 📌 Eliminar noticia
+  const eliminarNoticia = async (id) => {
+    const confirm = await Swal.fire({
+      title: "¿Eliminar noticia?",
+      text: "Esta acción no se puede deshacer",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        await deleteDoc(doc(db, "noticias", id));
+        Swal.fire("Eliminada", "La noticia fue eliminada", "success");
+      } catch (error) {
+        console.error("Error al eliminar:", error);
+        Swal.fire("Error", "No se pudo eliminar la noticia", "error");
+      }
+    }
+  };
+
+  // 📌 Cancelar edición / limpiar formulario
+  const limpiarFormulario = () => {
+    setTituloNoticia("");
+    setContenidoNoticia("");
+    setImagenUrl("");
+    setPreviewNoticia("");
+    setCategoria("");
+    setAutor("");
+    setFechaPublicacion("");
+    setEditando(false);
+    setEditarNoticiaId(null);
+    setMostrarAcordeon(false);
+  };
+
+  const cancelarEdicion = () => limpiarFormulario();
+
+
+  // muro informativo
+  // 📌 Publicar nuevo mensaje
+  const publicarMuroInformativo = async () => {
+    if (!tituloMuro || !contenidoMuro) {
+      Swal.fire("Campos incompletos", "Ingresa título y contenido", "warning");
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "muro"), {
+        titulo: tituloMuro,
+        descripcion: contenidoMuro,
+        categoria: categoriaMuro || "Anuncios Generales",
+        fecha: serverTimestamp(),
+        autorNombre: auth.currentUser?.displayName || "Administrador",
+        autorRol: "Administrador",
+        imagenurl: imagenurl || "",
+      });
+
+      Swal.fire("Publicado", "El mensaje se publicó correctamente", "success");
+      limpiarFormularioMuro();
+    } catch (error) {
+      console.error("Error al publicar mensaje:", error);
+      Swal.fire("Error", "No se pudo publicar el mensaje", "error");
+    }
+  };
+
+  // 📌 Editar mensaje
+  const editarMuroInformativo = (m) => {
+    setEditandoMuro(true);
+    setEditarMuroId(m.id);
+    setTituloMuro(m.titulo);
+    setContenidoMuro(m.descripcion);
+    setVisualMuro("formulario");
+    setCategoriaMuro(m.categoria || "Anuncios Generales");
+    setImagenurl(m.imagenurl || "");
+  };
+
+  // 📌 Actualizar mensaje
+  const actualizarMuroInformativo = async () => {
+    if (!editarMuroId) return;
+
+    if (!tituloMuro || !contenidoMuro || !categoriaMuro) {
+      Swal.fire("Campos incompletos", "Ingresa título, contenido y categoría", "warning");
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "muro", editarMuroId), {
+        titulo: tituloMuro,
+        descripcion: contenidoMuro,
+        categoria: categoriaMuro || "Anuncios Generales",
+        fechaActualizada: serverTimestamp(),
+        autorNombre: auth.currentUser?.displayName || "Administrador",
+        autorRol: "Administrador",
+        imagenurl: imagenurl || "",
+      });
+
+      Swal.fire("Actualizado", "El mensaje fue actualizado correctamente", "success");
+      limpiarFormularioMuro();
+    } catch (error) {
+      console.error("Error al actualizar mensaje:", error);
+      Swal.fire("Error", "No se pudo actualizar el mensaje", "error");
+    }
+  };
+
+  // 📌 Eliminar mensaje
+  const eliminarMuroInformativo = async (id) => {
+    const confirm = await Swal.fire({
+      title: "¿Eliminar mensaje?",
+      text: "Esta acción no se puede deshacer",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        await deleteDoc(doc(db, "muro", id));
+        Swal.fire("Eliminado", "El mensaje fue eliminado", "success");
+      } catch (error) {
+        console.error("Error al eliminar:", error);
+        Swal.fire("Error", "No se pudo eliminar el mensaje", "error");
+      }
+    }
+  };
+
+  // 📌 Limpiar formulario
+  const limpiarFormularioMuro = () => {
+    setTituloMuro("");
+    setContenidoMuro("");
+    setEditandoMuro(false);
+    setEditarMuroId(null);
+    setVisualMuro("lista");
+    setCategoriaMuro("");
+    setMostrarAcordeonMuro("false");
+    setImagenurl("");
+  };
+
 
 
   // ===== Cursos CRUD
@@ -1060,287 +1160,470 @@ const cancelarEdicion = () => limpiarFormulario();
           </section>
         )}
 
-       {/* ===== NOTICIAS ===== */}
-{tab === "noticias" && (
-  <section className="users">
-    <div
-      className="courses__header"
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}
-    >
-      <h2>Gestión de Noticias</h2>
-    </div>
-
-    {/* FORMULARIO DE PUBLICACIÓN / EDICIÓN */}
-    <div className="add-course">
-      <h2>{editarNoticiaId ? "✏️ Editar noticia" : "➕ Publicar nueva noticia"}</h2>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (editarNoticiaId) {
-             actualizarNoticia();
-           }else{
-             publicarNoticia();
-           }
-        }}
-        className="form"
-      >
-        <input
-          type="text"
-          placeholder="Título de la noticia"
-          value={tituloNoticia}
-          onChange={(e) => setTituloNoticia(e.target.value)}
-          required
-        />
-        <textarea
-          placeholder="Contenido de la noticia"
-          value={contenidoNoticia}
-          onChange={(e) => setContenidoNoticia(e.target.value)}
-          required
-        />
-        <input
-          type="text"
-          placeholder="URL de imagen (opcional)"
-          value={imagen}
-          onChange={(e) => {
-            setImagen(e.target.value);
-            setPreview(e.target.value);
-          }}
-        />
-
-        {preview && (
-          <img
-            src={preview}
-            alt="Vista previa"
-            style={{
-              width: 250,
-              borderRadius: 8,
-              marginTop: 10,
-              border: "1px solid #ccc",
-            }}
-          />
-        )}
-
-        {/* 🔽 Selector de Categoría con Acordeón */}
-<div className="categoria-selector" style={{ position: "relative" }}>
-  <input
-    type="text"
-    placeholder="Seleccionar categoría"
-    value={categoria}
-    readOnly
-    onClick={() => setMostrarAcordeon(!mostrarAcordeon)}
-    style={{
-      cursor: "pointer",
-      backgroundColor: "#fff",
-      border: "1px solid #ccc",
-      padding: "8px",
-      borderRadius: "6px",
-      width: "100%",
-    }}
-  />
-
-  {mostrarAcordeon && (
-    <div
-      className="acordeon-categorias"
-      style={{
-        position: "absolute",
-        top: "100%",
-        left: 0,
-        right: 0,
-        backgroundColor: "#f9f9f9",
-        border: "1px solid #ccc",
-        borderRadius: "6px",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-        zIndex: 1000,
-        maxHeight: "200px",
-        overflowY: "auto",
-        marginTop: "4px",
-      }}
-    >
-      {categoriasBanco.map((cat, index) => (
-        <div
-          key={index}
-          onClick={() => {
-            setCategoria(cat);
-            setMostrarAcordeon(false); // 🔹 cierra el acordeón al seleccionar
-          }}
-          style={{
-            padding: "10px",
-            cursor: "pointer",
-            borderBottom: "1px solid #eee",
-            backgroundColor: categoria === cat ? "#e0f7fa" : "transparent",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#f0f0f0")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor =
-              categoria === cat ? "#e0f7fa" : "transparent")
-          }
-        >
-          {cat}
-        </div>
-      ))}
-    </div>
-  )}
-</div>
-
-
-           <input
-      type="text"
-      value="Administrador"
-      readOnly
-      style={{
-        backgroundColor: "#f3f3f3",
-        border: "1px solid #ccc",
-        padding: "8px",
-        borderRadius: "6px",
-        width: "100%",
-        color: "#555",
-        cursor: "not-allowed",
-      }}
-    />
-        <input
-          type="date"
-          value={fechaPublicacion}
-          onChange={(e) => setFechaPublicacion(e.target.value)}
-        />
-
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button type="submit" className="btn btn--save">
-            {editarNoticiaId ? "Actualizar Noticia" : "Publicar Noticia"}
-          </button>
-
-          {editarNoticiaId && (
-            <button
-              type="button"
-              onClick={cancelarEdicion}
-              className="btn btn--cancel"
-            >
-              Cancelar
-            </button>
-          )}
-        </div>
-      </form>
-    </div>
-
-    {/* LISTADO DE NOTICIAS */}
-    <div className="news-list">
-      {noticias.length === 0 ? (
-        <p className="text-center text-gray-500 mt-4">
-          No hay noticias publicadas.
-        </p>
-      ) : (
-        noticias.map((n) => {
-          const imagenSrc =
-            n.imagen && n.imagen.startsWith("http")
-              ? n.imagen
-              : "https://via.placeholder.com/300x200?text=Sin+imagen";
-
-          return (
-            <div key={n.id} className="course-card">
-              <div className="news-image-container">
-                <img
-                  src={imagenSrc}
-                  alt={n.titulo}
-                  className="news-image"
-                  onError={(e) =>
-                    (e.target.src =
-                      "https://via.placeholder.com/300x200?text=No+disponible")
-                  }
-                />
-              </div>
-
-              <div className="news-info">
-                <h3 className="news-title">{n.titulo}</h3>
-                <span className="news-tag">{n.categoria || "General"}</span>
-                <p className="news-description">{n.descripcion}</p>
-
-                <div className="news-meta">
-                  <span className="news-date">
-                    📅{" "}
-                    {n.fechaPublicacion?.toDate?.().toLocaleDateString?.(
-                      "es-ES",
-                      { year: "numeric", month: "2-digit", day: "2-digit" }
-                    ) || "—"}
-                  </span>
-                  <span className="news-author">
-                    👤 {n.autor || "Administrador"}
-                  </span>
-                </div>
-
-                <div className="news-actions">
-                  <button
-                    className="btn btn--edit"
-                    onClick={() => editarNoticia(n)}
-                  >
-                    ✏️ Editar
-                  </button>
-                  <button
-                    className="btn btn--delete"
-                    onClick={() => eliminarNoticia(n.id)}
-                  >
-                    🗑️ Eliminar
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })
-      )}
-    </div>
-  </section>
-)}
-
-
-
-            
-
-
-
-
-         
-
-        {/* ===== MURO INFORMÁTIVO ===== */}
-        {tab === "muro" && (
+        {/* ===== NOTICIAS ===== */}
+        {tab === "noticias" && (
           <section className="users">
-            <div className="courses__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2>Gestion de Muro Informativo</h2>
+            <div
+              className="courses__header"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <h2>Gestión de Noticias</h2>
             </div>
+
+            {/* FORMULARIO DE PUBLICACIÓN / EDICIÓN */}
             <div className="add-course">
-              <h2>➕ Publicar nuevo mensaje</h2>
-              <form onSubmit={(e) => { e.preventDefault(); publicarMuroInformativo(); }} className="form">
+              <h2>{editarNoticiaId ? "✏️ Editar noticia" : "➕ Publicar nueva noticia"}</h2>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (editarNoticiaId) {
+                    actualizarNoticia();
+                  } else {
+                    publicarNoticia();
+                  }
+                }}
+                className="form"
+              >
                 <input
                   type="text"
-                  placeholder="Título del mensaje"
-                  value={tituloMuro}
-                  onChange={(e) => setTituloMuro(e.target.value)}
+                  placeholder="Título de la noticia"
+                  value={tituloNoticia}
+                  onChange={(e) => setTituloNoticia(e.target.value)}
+                  required
                 />
                 <textarea
-                  placeholder="Contenido del mensaje"
-                  value={contenidoMuro}
-                  onChange={(e) => setContenidoMuro(e.target.value)}
+                  placeholder="Contenido de la noticia"
+                  value={contenidoNoticia}
+                  onChange={(e) => setContenidoNoticia(e.target.value)}
+                  required
                 />
-                <button type="submit" className="btn btn--save">
-                  Publicar Mensaje
-                </button>
+                <input
+                  type="text"
+                  placeholder="URL de imagen (opcional)"
+                  value={imagenUrl} // Fixed
+                  onChange={(e) => {
+                    setImagenUrl(e.target.value);
+                    setPreviewNoticia(e.target.value);
+                  }}
+                />
+
+                {previewNoticia && ( // Fixed
+                  <img
+                    src={previewNoticia}
+                    alt="Vista previa"
+                    style={{
+                      width: 250,
+                      borderRadius: 8,
+                      marginTop: 10,
+                      border: "1px solid #ccc",
+                    }}
+                    onError={(e) =>
+                    (e.target.src =
+                      "https://via.placeholder.com/250x150?text=No+disponible")
+                    }
+                  />
+                )}
+
+                {/* 🔽 Selector de Categoría con Acordeón (unchanged) */}
+                <div className="categoria-selector" style={{ position: "relative" }}>
+                  <input
+                    type="text"
+                    placeholder="Seleccionar categoría"
+                    value={categoria}
+                    readOnly
+                    onClick={() => setMostrarAcordeon(!mostrarAcordeon)}
+                    style={{
+                      cursor: "pointer",
+                      backgroundColor: "#fff",
+                      border: "1px solid #ccc",
+                      padding: "8px",
+                      borderRadius: "6px",
+                      width: "100%",
+                    }}
+                  />
+
+                  {mostrarAcordeon && (
+                    <div
+                      className="acordeon-categorias"
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        backgroundColor: "#f9f9f9",
+                        border: "1px solid #ccc",
+                        borderRadius: "6px",
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                        zIndex: 1000,
+                        maxHeight: "200px",
+                        overflowY: "auto",
+                        marginTop: "4px",
+                      }}
+                    >
+                      {categoriasBanco.map((cat, index) => (
+                        <div
+                          key={index}
+                          onClick={() => {
+                            setCategoria(cat);
+                            setMostrarAcordeon(false);
+                          }}
+                          style={{
+                            padding: "10px",
+                            cursor: "pointer",
+                            borderBottom: "1px solid #eee",
+                            backgroundColor: categoria === cat ? "#e0f7fa" : "transparent",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f0f0f0")
+                          }
+                          onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            categoria === cat ? "#e0f7fa" : "transparent")
+                          }
+                        >
+                          {cat}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="Autor"
+                  value={autor || "Administrador"}
+                  readOnly // Fixed: use state, allow editing if needed
+                  // onChange={(e) => setAutor(e.target.value)} // Add if you want editable
+                  style={{
+                    backgroundColor: "#f3f3f3",
+                    border: "1px solid #ccc",
+                    padding: "8px",
+                    borderRadius: "6px",
+                    width: "100%",
+                    color: "#555",
+                  }}
+                />
+                <input
+                  type="date"
+                  value={fechaPublicacion}
+                  onChange={(e) => setFechaPublicacion(e.target.value)}
+                />
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button type="submit" className="btn btn--save">
+                    {editarNoticiaId ? "Actualizar Noticia" : "Publicar Noticia"}
+                  </button>
+
+                  {editarNoticiaId && (
+                    <button
+                      type="button"
+                      onClick={cancelarEdicion}
+                      className="btn btn--cancel"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
 
-            <div className="course-list">
-              {muroInformativo.map((m) => (
-                <div key={m.id} className="course-card">
-                  <div>
-                    <h3>{m.titulo}</h3>
-                    <p>{m.descripcion}</p>
-                    <small>Publicado el: {m.fecha?.toDate?.().toLocaleDateString?.() || "—"}</small>
-                  </div>
-                </div>
-              ))}
+            {/* LISTADO DE NOTICIAS (unchanged) */}
+            <div className="news-list">
+              {noticias.length === 0 ? (
+                <p className="text-center text-gray-500 mt-4">
+                  No hay noticias publicadas.
+                </p>
+              ) : (
+                noticias.map((n) => {
+                  const imagenSrc =
+                    n.imagen && n.imagen.startsWith("http")
+                      ? n.imagen
+                      : "https://via.placeholder.com/300x200?text=Sin+imagen";
+
+                  return (
+                    <div key={n.id} className="course-card">
+                      <div className="news-image-container">
+                        <img
+                          src={imagenSrc}
+                          alt={n.titulo}
+                          className="news-image"
+                          onError={(e) =>
+                          (e.target.src =
+                            "https://via.placeholder.com/300x200?text=No+disponible")
+                          }
+                        />
+                      </div>
+
+                      <div className="news-info">
+                        <h3 className="news-title">{n.titulo}</h3>
+                        <span className="news-tag">{n.categoria || "General"}</span>
+                        <p className="news-description">{n.descripcion}</p>
+
+                        <div className="news-meta">
+                          <span className="news-date">
+                            📅{" "}
+                            {n.fechaPublicacion?.toDate?.().toLocaleDateString?.(
+                              "es-ES",
+                              { year: "numeric", month: "2-digit", day: "2-digit" }
+                            ) || "—"}
+                          </span>
+                          <span className="news-author">
+                            👤 {n.autor || "Administrador"}
+                          </span>
+                        </div>
+
+                        <div className="news-actions">
+                          <button
+                            className="btn btn--edit"
+                            onClick={() => editarNoticia(n)}
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            className="btn btn--delete"
+                            onClick={() => eliminarNoticia(n.id)}
+                          >
+                            🗑️ Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
+          </section>
+        )}
+
+
+
+
+
+
+
+
+
+        {tab === "muro" && (
+          <section className="users" aria-labelledby="muro-heading">
+            <div
+              className="courses__header"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "1rem 0",
+              }}
+            >
+              <h2 id="muro-heading">Gestión del Muro Informativo</h2>
+              <button
+                className="btn btn--add"
+                onClick={() => {
+                  limpiarFormularioMuro();
+                  setVisualMuro("formulario");
+                }}
+              >
+                ➕ Nuevo Mensaje
+              </button>
+            </div>
+
+            {/* ===== Formulario para crear/editar mensajes ===== */}
+            {visualMuro === "formulario" && (
+              <div className="add-course">
+                <h3>{editandoMuro ? "✏️ Editar mensaje" : "➕ Publicar nuevo mensaje"}</h3>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (editandoMuro) {
+                      await actualizarMuroInformativo();
+                    } else {
+                      await publicarMuroInformativo();
+                    }
+                  }}
+                  className="form"
+                >
+                  <div className="form-group">
+                    <label htmlFor="titulo-muro">Título del mensaje</label>
+                    <input
+                      id="titulo-muro"
+                      type="text"
+                      placeholder="Título del mensaje"
+                      value={tituloMuro}
+                      onChange={(e) => setTituloMuro(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="contenido-muro">Contenido del mensaje</label>
+                    <textarea
+                      id="contenido-muro"
+                      placeholder="Contenido del mensaje"
+                      value={contenidoMuro}
+                      onChange={(e) => setContenidoMuro(e.target.value)}
+                      rows="5"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="categoria-muro">Categoría</label>
+                    <div className="categoria-selector" style={{ position: "relative" }}>
+                      <input
+                        id="categoria-muro"
+                        type="text"
+                        placeholder="Seleccionar categoría"
+                        value={categoriaMuro}
+                        readOnly
+                        onClick={() => setMostrarAcordeonMuro(!mostrarAcordeonMuro)}
+                        style={{
+                          cursor: "pointer",
+                          backgroundColor: "#fff",
+                          border: "1px solid #ccc",
+                          padding: "8px",
+                          borderRadius: "6px",
+                          width: "100%",
+                        }}
+                      />
+                      {mostrarAcordeonMuro && (
+                        <div
+                          className="acordeon-categorias"
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            backgroundColor: "#f9f9f9",
+                            border: "1px solid #ccc",
+                            borderRadius: "6px",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                            zIndex: 1000,
+                            maxHeight: "200px",
+                            overflowY: "auto",
+                            marginTop: "4px",
+                          }}
+                        >
+                          {categoriasMuro.map((cat, index) => (
+                            <div
+                              key={index}
+                              onClick={() => {
+                                setCategoriaMuro(cat);
+                                setMostrarAcordeonMuro(false);
+                              }}
+                              style={{
+                                padding: "10px",
+                                cursor: "pointer",
+                                borderBottom: "1px solid #eee",
+                                backgroundColor: categoriaMuro === cat ? "#e0f7fa" : "transparent",
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f0f0f0")}
+                              onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                categoriaMuro === cat ? "#e0f7fa" : "transparent")
+                              }
+                            >
+                              {cat}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="imagen-muro">URL del Ícono (ingresar URL)</label>
+                    <input
+                      id="imagen-muro"
+                      type="text"
+                      placeholder="Pega aquí la URL de la imagen (ej. https://example.com/imagen.jpg)"
+                      value={imagenurl || ""}
+                      onChange={(e) => setImagenurl(e.target.value)} // Actualizar el estado con la URL ingresada
+                    />
+                    {imagenurl && (
+                      <img
+                        src={imagenurl}
+                        alt="Vista previa del ícono"
+                        style={{ width: "50px", height: "50px", marginTop: "10px", borderRadius: "50%" }}
+                        onError={(e) => console.log("Error al cargar la URL de la imagen:", e)} // Depuración
+                      />
+                    )}
+                  </div>
+                  <div className="form-actions">
+                    <button type="submit" className="btn btn--save">
+                      {editandoMuro ? "Actualizar Mensaje" : "Publicar Mensaje"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--cancel"
+                      onClick={limpiarFormularioMuro}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* ===== Lista de mensajes publicados ===== */}
+            {visualMuro === "lista" && (
+              <div className="course-list">
+                {muroInformativo.length === 0 ? (
+                  <p className="text-center text-gray-500 mt-4">
+                    No hay mensajes publicados.
+                  </p>
+                ) : (
+                  muroInformativo.map((m) => (
+                    <div key={m.id} className="course-card">
+                      <div className="news-info">
+                        <h3>{m.titulo}</h3>
+                        <span className="news-tag">{m.categoria || "General"}</span>
+                        <p>{m.descripcion}</p>
+                        <small>
+                          Publicado el:{" "}
+                          {m.fecha?.toDate?.().toLocaleDateString?.("es-ES", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }) || "Fecha no disponible"}
+                          
+                          {m.fechaActualizada && (
+                            <>
+                            <br />
+                              {" · Actualizado el: "}
+                              {m.fechaActualizada?.toDate?.().toLocaleDateString?.("es-ES", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }) || "—"}
+                            </>
+                          )}
+                        </small>
+                      </div>
+                      <div className="news-actions">
+                        <button
+                          className="btn btn--edit"
+                          onClick={() => editarMuroInformativo(m)}
+                          aria-label={`Editar mensaje ${m.titulo}`}
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button
+                          className="btn btn--delete"
+                          onClick={() => eliminarMuroInformativo(m.id)}
+                          aria-label={`Eliminar mensaje ${m.titulo}`}
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </section>
         )}
 
@@ -1348,3 +1631,4 @@ const cancelarEdicion = () => limpiarFormulario();
     </div>
   );
 }
+

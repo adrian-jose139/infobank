@@ -28,7 +28,7 @@ export default function Noticias() {
   const [busqueda, setBusqueda] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState('Todas');
 
-  const categorias = ["Todas", "Corporativas", "Economía", "Eventos", "Educación Financiera", "Tecnología", "Comunicados Urgentes"];
+  const categorias = ["Todas", "Corporativas", "Economía", "Eventos", "Educación Financiera", "Tecnología", "Comunicados Urgentes", "Recursos Humanos"];
 
   useEffect(() => {
     const q = query(collection(db, "noticias"), orderBy("fechaPublicacion", "desc"));

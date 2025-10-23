@@ -139,29 +139,94 @@ export default function Soporte() {
         </button>
       </form>
 
-      {/* Historial */}
+      {/* Historial de Mensajes (todos los enviados por el empleado) */}
       <h3>Historial de Mensajes</h3>
       {historial.length === 0 ? (
         <p>No has enviado ningún mensaje aún.</p>
       ) : (
         historial.map((m) => (
-          <div key={m.id} className={`msg-card ${m.estado}`}>
+          <div key={m.id} className="msg-card">
             <h4>{m.asunto}</h4>
             <p>{m.contenido}</p>
             <small>
-              Estado:{" "}
-              <span className={m.estado === "pendiente" ? "amarillo" : "verde"}>
-                {m.estado}
-              </span>
+              Publicado el:{" "}
+              {m.creadoEn?.toDate?.().toLocaleDateString?.("es-ES", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }) || "Fecha no disponible"}
             </small>
-            {m.respuesta && (
+          </div>
+        ))
+      )}
+
+      {/* Mensajes Pendientes (no respondidos) */}
+      <h3>Mensajes Pendientes</h3>
+      {historial.filter((m) => m.estado === "pendiente").length === 0 ? (
+        <p>No tienes mensajes pendientes.</p>
+      ) : (
+        historial
+          .filter((m) => m.estado === "pendiente")
+          .map((m) => (
+            <div key={m.id} className="msg-card pendiente">
+              <h4>{m.asunto}</h4>
+              <p>{m.contenido}</p>
+              <small>
+                Estado: <span className="amarillo">pendiente</span>
+                <br />
+                Publicado el:{" "}
+                {m.creadoEn?.toDate?.().toLocaleDateString?.("es-ES", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }) || "Fecha no disponible"}
+              </small>
+            </div>
+          ))
+      )}
+
+      {/* Mensajes Respondidos (con respuesta del admin) */}
+      <h3>Mensajes Respondidos</h3>
+      {historial.filter((m) => m.estado === "respondido").length === 0 ? (
+        <p>No tienes mensajes respondidos.</p>
+      ) : (
+        historial
+          .filter((m) => m.estado === "respondido")
+          .map((m) => (
+            <div key={m.id} className="msg-card respondido">
+              <h4>{m.asunto}</h4>
+              <p>{m.contenido}</p>
+              <small>
+                Estado: <span className="verde">respondido</span>
+                <br />
+                Publicado el:{" "}
+                {m.creadoEn?.toDate?.().toLocaleDateString?.("es-ES", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }) || "Fecha no disponible"}
+                <br />
+                Respondido el:{" "}
+                {m.respondidoEn?.toDate?.().toLocaleDateString?.("es-ES", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }) || "Fecha no disponible"}
+              </small>
               <div className="respuesta">
                 <strong>Respuesta del soporte:</strong>
                 <p>{m.respuesta}</p>
               </div>
-            )}
-          </div>
-        ))
+            </div>
+          ))
       )}
     </div>
   );
