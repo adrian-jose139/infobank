@@ -155,9 +155,7 @@ const handleCancelar = async (curso) => {
                       >
                         Ver Contenido
                       </button>
-                      <button className="btn-evaluacion" disabled>
-                        Presentar Evaluación
-                      </button>
+                      
                       <button
                         className="btn-cancelar"
                         onClick={() => handleCancelar(curso)}

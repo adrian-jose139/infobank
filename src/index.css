@@ -36,14 +36,14 @@ body {
   margin-bottom: 18px;
 }
 
-/* ✍️ Título */
+/* ✍ Título */
 .login-card h2 {
   margin-bottom: 20px;
   color: #1e293b;
   font-weight: 700;
 }
 
-/* ✏️ Inputs */
+/* ✏ Inputs */
 .login-card input {
   width: 100%;
   padding: 10px;
@@ -121,3 +121,184 @@ body {
     padding: 28px 20px;
   }
 }
+/* Estilos base (modo claro) */
+body {
+  background-color: #f8f9fa;
+  color: #212529;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: sans-serif; /* Asegúrate de definir una fuente */
+  margin: 0; /* Reiniciar margen por defecto */
+}
+
+/* --- ESTILOS MODO OSCURO --- */
+body.dark {
+  background-color: #121212; /* Fondo oscuro */
+  color: #e0e0e0; /* Texto claro */
+}
+
+/* Títulos generales */
+body.dark h1,
+body.dark h2,
+body.dark h3,
+body.dark h4,
+body.dark h5,
+body.dark h6 {
+  color: #ffffff; /* Títulos más blancos */
+}
+
+/* Enlaces generales */
+body.dark a {
+  color: #bb86fc; /* Color de enlace para modo oscuro */
+}
+body.dark a:hover {
+  color: #d1b1ff;
+}
+
+/* Formularios generales */
+body.dark input,
+body.dark select,
+body.dark textarea {
+  background-color: #333;
+  color: #e0e0e0;
+  border: 1px solid #555; /* Borde más claro en oscuro */
+}
+body.dark input::placeholder,
+body.dark textarea::placeholder {
+  color: #888; /* Placeholder más claro */
+}
+body.dark select {
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23AAAAAA%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+  background-repeat: no-repeat;
+  background-position: right .7em top 50%;
+  background-size: .65em auto;
+  padding-right: 2em;
+}
+
+
+/* --- !! ESTILOS ESPECÍFICOS PARA COMPONENTES !! --- */
+
+/* --- Dashboard Normal --- */
+/* ✅ CORRECCIÓN: Estilo específico para el contenedor con clase .dash */
+body.dark .dash {
+  background-color: #121212;
+}
+/* Header del Dashboard (Reemplaza .dashboard-header) */
+body.dark .dashboard-header { background-color: #1e1e1e; border-bottom-color: #333;}
+body.dark .dashboard-header h1, body.dark .dashboard-header p { color: #e0e0e0; }
+body.dark .dashboard-header .user-menu a, body.dark .dashboard-header .user-menu button { color: #bb86fc; background: none; border: none; }
+/* Tarjetas principales del Dashboard (Reemplaza .card-dashboard) */
+body.dark .card-dashboard { background-color: #2a2a2a; border: 1px solid #444; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); }
+body.dark .card-dashboard h3 { color: #eee; }
+body.dark .card-dashboard p { color: #bbb; }
+/* Botones DENTRO de las tarjetas del Dashboard */
+body.dark .card-dashboard .btn-ver-cursos { background-color: #3f51b5; color: white;}
+body.dark .card-dashboard .btn-ver-noticias { background-color: #1e8e3e; color: white;}
+body.dark .card-dashboard .btn-ver-muro { background-color: #6a1b9a; color: white;}
+body.dark .card-dashboard .btn-configurar { background-color: #d84315; color: white;}
+/* Tarjeta "Soporte Técnico" (Reemplaza .support-card) */
+body.dark .support-card { background-color: #1e1e1e; border: 1px solid #333; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); }
+body.dark .support-card a, body.dark .support-card button { color: #bb86fc; }
+
+/* --- Admin Dashboard --- */
+/* Contenedor principal del Admin (Reemplaza .admin) */
+body.dark .admin {
+  background-color: #181818; /* Un gris un poco más claro que el body */
+}
+/* Header del Admin (Reemplaza .admin__header) */
+body.dark .admin__header {
+  background-color: #212121;
+  border-bottom-color: #444 !important; /* Usa !important si es necesario */
+}
+body.dark .admin__header h1 {
+  color: #fff;
+}
+body.dark .btn--logout { /* Botón de logout */
+  background-color: #555;
+  color: #eee;
+}
+/* Tarjetas de Estadísticas (Reemplaza .stat) */
+body.dark .stat {
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+}
+body.dark .stat h3 { color: #eee; }
+body.dark .stat p, body.dark .stat span { color: #bbb; }
+/* Barra de Pestañas (Reemplaza .tab-bar y .tab-btn) */
+body.dark .tab-bar {
+  background-color: #212121;
+  border-bottom-color: #444;
+}
+body.dark .tab-btn {
+  color: #aaa;
+}
+body.dark .tab-btn:hover {
+  background-color: #333;
+  color: #eee;
+}
+body.dark .tab-btn.active {
+  color: #fff;
+  border-bottom-color: #bb86fc; /* Color de acento */
+  background-color: #2a2a2a;
+}
+/* Contenido de las Pestañas (Reemplaza .tab-content) */
+body.dark .tab-content {
+  /* No necesita fondo si el .admin ya lo tiene */
+}
+/* Tarjetas dentro del Admin (Cursos, Usuarios, Mensajes...) */
+/* Reemplaza .course-card, .user-card, .message-card, etc. */
+body.dark .course-card,
+body.dark .user-card,
+body.dark .message-card,
+body.dark .notification-card,
+body.dark .noticia-item-admin,
+body.dark .register-card, /* El formulario de registro */
+body.dark .add-course, /* Formulario de cursos */
+body.dark .noticias-tab, /* Formulario de noticias */
+body.dark .muro-tab /* Formulario de muro */
+{
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+}
+body.dark .course-card h3, body.dark .user-card h3 { color: #eee; }
+body.dark .course-card p, body.dark .user-card p, body.dark .message-card p { color: #bbb; }
+/* Formularios dentro del admin */
+body.dark .form input,
+body.dark .form textarea,
+body.dark .form select,
+body.dark .register-card input,
+body.dark .register-card select
+{
+  background-color: #3c3c3c; /* Un gris un poco más claro para forms */
+  color: #eee;
+  border-color: #666;
+}
+body.dark .form label, body.dark .register-card label {
+  color: #ccc; /* Etiquetas un poco más claras */
+}
+/* Botones dentro del admin */
+body.dark .btn--save, body.dark .btn--primary { background-color: #bb86fc; color: #121212; border: none; }
+body.dark .btn--cancel, body.dark .btn--secondary { background-color: #555; color: #eee; border-color: #777; }
+body.dark .btn--delete { background-color: #cf6679; color: #121212; border: none; }
+body.dark .btn--edit { background-color: #03dac6; color: #121212; border: none; }
+body.dark .btn--block { background-color: #ffb74d; color: #121212; border: none; }
+body.dark .btn--activate { background-color: #81c784; color: #121212; border: none; }
+/* Modal de edición de usuario */
+body.dark .modal-backdrop { background-color: rgba(0, 0, 0, 0.7); }
+body.dark .modal-content { background-color: #2a2a2a; border-color: #444; }
+
+
+/* Clases genéricas */
+body.dark .card {
+  background-color: #1e1e1e;
+  border-color: #333;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+}
+body.dark .table { border-color: #444; }
+body.dark .table th { background-color: #2a2a2a; color: #eee; border-color: #444; }
+body.dark .table td { border-color: #444; color: #ccc; }
+
+
+/* --- FIN ESTILOS MODO OSCURO --- */
+
+/* Añade aquí el resto de tus estilos globales */

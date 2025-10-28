@@ -8,6 +8,9 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  updateDoc,
+  doc,
+  deleteDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import Swal from "sweetalert2";
@@ -17,95 +20,215 @@ import "./Soporte.css";
 export default function Soporte() {
   const [asunto, setAsunto] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [respuestasEmpleado, setRespuestasEmpleado] = useState({});
   const [mensajesPendientes, setMensajesPendientes] = useState(0);
   const [mensajesRespondidos, setMensajesRespondidos] = useState(0);
+  const [pendientes, setPendientes] = useState([]);
   const [historial, setHistorial] = useState([]);
+  const [respuestas, setRespuestas] = useState({});
   const [uid, setUid] = useState(null);
-  const [usuario, setUsuario] = useState(null);
+  const [usuario, setUsuario] = useState(null); // Correo del empleado autenticado
+  const [error, setError] = useState(null);
 
-  // 🧠 Detectar usuario actual
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        console.log("Empleado autenticado => usuario:", { uid: user.uid, email: user.email });
         setUid(user.uid);
         setUsuario(user.email);
       } else {
+        console.log("No hay empleado autenticado");
         setUid(null);
+        setUsuario(null);
+        setError("Por favor inicia sesión para ver tus mensajes.");
       }
+    }, (err) => {
+      console.error("Error en onAuthStateChanged:", err);
+      setError("Error al verificar autenticación: " + err.message);
     });
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
-  // 📥 Cargar mensajes del usuario en tiempo real
   useEffect(() => {
-    if (!uid) return;
+    if (!uid) {
+      console.log("No hay UID, no se cargan mensajes");
+      return;
+    }
 
-    const q = query(
+    console.log("Cargando mensajes para UID:", uid);
+    const mensajesQuery = query(
       collection(db, "mensajes"),
       where("userId", "==", uid),
       orderBy("creadoEn", "desc")
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const mensajes = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+    const unsubscribeMensajes = onSnapshot(
+      mensajesQuery,
+      (snapshot) => {
+        const mensajes = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        console.log("Mensajes cargados:", mensajes);
+        setMensajesPendientes(mensajes.filter((m) => m.estado === "pendiente").length);
+        setMensajesRespondidos(mensajes.filter((m) => m.estado === "respondido").length);
+        setPendientes(mensajes.filter((m) => m.estado === "pendiente"));
+        setHistorial(mensajes.filter((m) => m.estado === "respondido"));
+        setError(null);
 
-      setMensajesPendientes(mensajes.filter((m) => m.estado === "pendiente").length);
-      setMensajesRespondidos(mensajes.filter((m) => m.estado === "respondido").length);
-      setHistorial(mensajes);
-    });
+        mensajes.forEach((mensaje) => {
+          const respuestasQuery = query(
+            collection(db, "mensajes_respuestas"),
+            where("mensajeId", "==", mensaje.id),
+            orderBy("respondidoEn", "asc")
+          );
+          onSnapshot(
+            respuestasQuery,
+            (resSnapshot) => {
+              const respuestasData = resSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              }));
+              console.log(`Respuestas para mensaje ${mensaje.id}:`, respuestasData);
+              setRespuestas((prev) => ({
+                ...prev,
+                [mensaje.id]: respuestasData,
+              }));
+            },
+            (err) => {
+              console.error(`Error al cargar respuestas para mensaje ${mensaje.id}:`, err);
+              setError("Error al cargar respuestas: " + err.message);
+            }
+          );
+        });
+      },
+      (err) => {
+        console.error("Error al cargar mensajes:", err);
+        setError("No se pudieron cargar los mensajes: " + err.message);
+        Swal.fire("Error", "No se pudieron cargar los mensajes: " + err.message, "error");
+      }
+    );
 
-    return unsubscribe;
+    return () => unsubscribeMensajes();
   }, [uid]);
 
-  // 📨 Enviar nuevo mensaje
   const handleEnviarMensaje = async (e) => {
     e.preventDefault();
-
     if (!asunto || !mensaje) {
       Swal.fire("Campos vacíos", "Por favor completa el asunto y mensaje", "warning");
       return;
     }
-
     try {
+      console.log("Enviando mensaje:", { asunto, mensaje, userId: uid, remitente: usuario, nombre: usuario.split('@')[0] }); // Usamos el nombre como fallback
       await addDoc(collection(db, "mensajes"), {
         asunto,
         contenido: mensaje,
         userId: uid,
-        remitente: usuario,
+        remitente: usuario, // Correo
+        nombre: usuario.split('@')[0], // Nombre como fallback (puedes ajustarlo)
         estado: "pendiente",
         creadoEn: serverTimestamp(),
       });
-
       Swal.fire({
         icon: "success",
         title: "Mensaje enviado correctamente 🎉",
         text: "Nuestro equipo de soporte técnico te responderá pronto.",
         confirmButtonColor: "#16a34a",
       });
-
       setAsunto("");
       setMensaje("");
     } catch (error) {
-      Swal.fire("Error", "No se pudo enviar el mensaje", "error");
+      console.error("Error al enviar mensaje:", error);
+      Swal.fire("Error", "No se pudo enviar el mensaje: " + error.message, "error");
+    }
+  };
+
+  const handleEnviarRespuesta = async (mensajeId) => {
+    const respuestaText = respuestasEmpleado[mensajeId] || "";
+    if (!respuestaText) {
+      Swal.fire("Campo vacío", "Por favor escribe una respuesta", "warning");
+      return;
+    }
+    try {
+      console.log("Enviando respuesta para mensajeId:", mensajeId, { respuestaText, remitente: usuario });
+      await addDoc(collection(db, "mensajes_respuestas"), {
+        mensajeId,
+        respuesta: respuestaText,
+        remitente: usuario,
+        respondidoPor: usuario,
+        respondidoEn: serverTimestamp(),
+      });
+      await updateDoc(doc(db, "mensajes", mensajeId), {
+        estado: "pendiente",
+        respondidoPor: usuario,
+        respondidoEn: serverTimestamp(),
+      });
+      Swal.fire({
+        icon: "success",
+        title: "Respuesta enviada correctamente 🎉",
+        confirmButtonColor: "#16a34a",
+      });
+      setRespuestasEmpleado((prev) => ({ ...prev, [mensajeId]: "" }));
+    } catch (error) {
+      console.error("Error al enviar respuesta:", error);
+      Swal.fire("Error", "No se pudo enviar la respuesta: " + error.message, "error");
+    }
+  };
+
+  const handleRespuestaChange = (mensajeId, value) => {
+    setRespuestasEmpleado((prev) => ({ ...prev, [mensajeId]: value }));
+  };
+
+  const marcarLeido = async (mensajeId) => {
+    try {
+      await updateDoc(doc(db, "mensajes", mensajeId), {
+        estado: "respondido",
+      });
+      Swal.fire({
+        icon: "success",
+        title: "Mensaje marcado como leído",
+        confirmButtonColor: "#16a34a",
+      });
+    } catch (error) {
+      console.error("Error al marcar como leído:", error);
+      Swal.fire("Error", "No se pudo marcar como leído: " + error.message, "error");
+    }
+  };
+
+  const eliminarMensaje = async (mensajeId) => {
+    const confirm = await Swal.fire({
+      title: "¿Eliminar mensaje?",
+      text: "Esta acción no se puede deshacer",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+    if (confirm.isConfirmed) {
+      try {
+        await deleteDoc(doc(db, "mensajes", mensajeId));
+        Swal.fire("Eliminado", "El mensaje fue eliminado", "success");
+      } catch (error) {
+        console.error("Error al eliminar:", error);
+        Swal.fire("Error", "No se pudo eliminar el mensaje: " + error.message, "error");
+      }
     }
   };
 
   return (
     <div className="soporte-container">
-      {/* 🔙 Botón de regreso */}
+      {error && (
+        <div className="error-message" style={{ color: "red", marginBottom: "20px" }}>
+          {error}
+        </div>
+      )}
       <div className="volver-inicio">
         <Link to="/dashboard" className="btn-volver">
           ← Volver al Inicio
         </Link>
       </div>
-
       <h2>Centro de Soporte</h2>
-      <p>Envía tus consultas y recibe ayuda del equipo de soporte técnico</p>
-
-      {/* Estadísticas */}
+      <p>Envía tus consultas y chatea con el equipo de soporte técnico</p>
       <div className="soporte-stats">
         <div className="stat-pendiente">
           <h4>Mensajes Pendientes</h4>
@@ -116,8 +239,6 @@ export default function Soporte() {
           <p>{mensajesRespondidos}</p>
         </div>
       </div>
-
-      {/* Formulario */}
       <form onSubmit={handleEnviarMensaje} className="form-soporte">
         <label>Asunto</label>
         <input
@@ -126,108 +247,96 @@ export default function Soporte() {
           onChange={(e) => setAsunto(e.target.value)}
           placeholder="Describe brevemente tu consulta"
         />
-
         <label>Mensaje</label>
         <textarea
           value={mensaje}
           onChange={(e) => setMensaje(e.target.value)}
           placeholder="Escribe los detalles de tu consulta o problema..."
         ></textarea>
-
         <button type="submit" className="btn-enviar">
           Enviar Mensaje
         </button>
       </form>
-
-      {/* Historial de Mensajes (todos los enviados por el empleado) */}
-      <h3>Historial de Mensajes</h3>
-      {historial.length === 0 ? (
-        <p>No has enviado ningún mensaje aún.</p>
-      ) : (
-        historial.map((m) => (
-          <div key={m.id} className="msg-card">
-            <h4>{m.asunto}</h4>
-            <p>{m.contenido}</p>
-            <small>
-              Publicado el:{" "}
-              {m.creadoEn?.toDate?.().toLocaleDateString?.("es-ES", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }) || "Fecha no disponible"}
-            </small>
-          </div>
-        ))
-      )}
-
-      {/* Mensajes Pendientes (no respondidos) */}
-      <h3>Mensajes Pendientes</h3>
-      {historial.filter((m) => m.estado === "pendiente").length === 0 ? (
-        <p>No tienes mensajes pendientes.</p>
-      ) : (
-        historial
-          .filter((m) => m.estado === "pendiente")
-          .map((m) => (
-            <div key={m.id} className="msg-card pendiente">
-              <h4>{m.asunto}</h4>
-              <p>{m.contenido}</p>
-              <small>
-                Estado: <span className="amarillo">pendiente</span>
-                <br />
-                Publicado el:{" "}
-                {m.creadoEn?.toDate?.().toLocaleDateString?.("es-ES", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }) || "Fecha no disponible"}
-              </small>
-            </div>
-          ))
-      )}
-
-      {/* Mensajes Respondidos (con respuesta del admin) */}
-      <h3>Mensajes Respondidos</h3>
-      {historial.filter((m) => m.estado === "respondido").length === 0 ? (
-        <p>No tienes mensajes respondidos.</p>
-      ) : (
-        historial
-          .filter((m) => m.estado === "respondido")
-          .map((m) => (
-            <div key={m.id} className="msg-card respondido">
-              <h4>{m.asunto}</h4>
-              <p>{m.contenido}</p>
-              <small>
-                Estado: <span className="verde">respondido</span>
-                <br />
-                Publicado el:{" "}
-                {m.creadoEn?.toDate?.().toLocaleDateString?.("es-ES", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }) || "Fecha no disponible"}
-                <br />
-                Respondido el:{" "}
-                {m.respondidoEn?.toDate?.().toLocaleDateString?.("es-ES", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }) || "Fecha no disponible"}
-              </small>
-              <div className="respuesta">
-                <strong>Respuesta del soporte:</strong>
-                <p>{m.respuesta}</p>
+      <h3>Conversaciones</h3>
+      {(pendientes.length > 0 || historial.length > 0) ? (
+        <div className="chat-container">
+          {[...pendientes, ...historial].map((m) => (
+            <div key={m.id} className="chat-thread">
+              <div className="chat-header">
+                <h4>{m.asunto}</h4>
+                <small>Remitente: {m.nombre || m.remitente.split('@')[0]}</small>
+                <small>Estado: {m.estado}</small>
               </div>
+              <div className="chat-messages">
+                <div className="message received"> {/* Mensaje original siempre recibido */}
+                  <p><strong>{m.remitente}</strong>: {m.contenido}</p>
+                  <small>
+                    {m.creadoEn?.toDate?.().toLocaleString() || "Fecha no disponible"}
+                  </small>
+                </div>
+                {(respuestas[m.id] || []).map((resp, index) => (
+                  <div key={index} className={`message ${resp.respondidoPor === usuario ? "sent" : "received"}`}>
+                    <p><strong>{resp.respondidoPor}</strong>: {resp.respuesta}</p>
+                    <small>
+                      {resp.respondidoEn?.toDate?.().toLocaleString() || "Fecha no disponible"}
+                    </small>
+                  </div>
+                ))}{(respuestas[m.id] || []).map((resp, index) => {
+                  // ← LOGS DE DEPURACIÓN
+                  console.log("Respuesta en empleado → respondidoPor:", resp.respondidoPor);
+                  console.log("Comparando con usuario actual:", usuario);
+                  console.log("¿Es enviado por el empleado? →", resp.respondidoPor === usuario);
+                  console.log("Clase asignada →", resp.respondidoPor === usuario ? "sent" : "received");
+                  // ← FIN LOGS
+
+                  return (
+                    <div key={index} className={`message ${resp.respondidoPor === usuario ? "sent" : "received"}`}>
+                      <p><strong>{resp.respondidoPor}</strong>: {resp.respuesta}</p>
+                      <small>
+                        {resp.respondidoEn?.toDate?.().toLocaleString() || "Fecha no disponible"}
+                      </small>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="chat-input">
+                {respuestas[m.id]?.some(r => r.respondidoPor !== usuario) ? (
+                  <p style={{ color: 'gray', fontStyle: 'italic' }}>
+                    El administrador ha respondido. No puedes responder nuevamente.
+                  </p>
+                ) : (
+                  <>
+                    <textarea
+                      value={respuestasEmpleado[m.id] || ""}
+                      onChange={(e) => handleRespuestaChange(m.id, e.target.value)}
+                      placeholder="Escribe tu respuesta..."
+                    ></textarea>
+                    <button
+                      onClick={() => handleEnviarRespuesta(m.id)}
+                      className="btn-enviar"
+                    >
+                      Enviar
+                    </button>
+                  </>
+                )}
+                  </div>
+                
+                <div className="chat-actions">
+                  <button onClick={() => marcarLeido(m.id)} className="btn-leido">
+                    Leído
+                  </button>
+                  <button onClick={() => eliminarMensaje(m.id)} className="btn-eliminar">
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+          ))}
             </div>
-          ))
-      )}
-    </div>
-  );
+          ) : (
+          <p>No tienes conversaciones activas.</p>
+          )
+
+      }
+        </div>
+      );
 }

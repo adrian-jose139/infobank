@@ -503,3 +503,29 @@ body.dark,
 .dark .msg-card{ background:#111827; border-color:#374151; }
 .dark .badge--count{ background:#ef4444; }
 .dark .badge--warn{ background:#f59e0b; color:#111827; }
+
+
+/* En Soporte.css y AdminDashboard.css */
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message {
+  padding: 10px;
+  border-radius: 5px;
+  max-width: 70%;
+}
+
+.received {
+  background-color: #e9ecef;
+  align-self: flex-start; /* Alinea a la izquierda */
+  text-align: left;
+}
+
+.sent {
+  background-color: #d1e7dd;
+  align-self: flex-end; /* Alinea a la derecha */
+  text-align: right;
+}
