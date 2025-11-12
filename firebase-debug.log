@@ -1,0 +1,41 @@
+[debug] [2025-10-25T01:39:31.905Z] ----------------------------------------------------------------------
+[debug] [2025-10-25T01:39:31.912Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\USUARIO\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init functions
+[debug] [2025-10-25T01:39:31.912Z] CLI Version:   14.22.0
+[debug] [2025-10-25T01:39:31.912Z] Platform:      win32
+[debug] [2025-10-25T01:39:31.912Z] Node Version:  v24.9.0
+[debug] [2025-10-25T01:39:31.913Z] Time:          Fri Oct 24 2025 20:39:31 GMT-0500 (hora estándar de Colombia)
+[debug] [2025-10-25T01:39:31.913Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  C:\proyecto-sena--master
+
+Before we get started, keep in mind:
+
+  * You are currently outside your home directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2025-10-25T01:41:28.053Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-10-25T01:41:28.055Z] > authorizing via signed-in user (luisenriquevillalba5@gmail.com)
+[debug] [2025-10-25T01:41:28.058Z] Checked if tokens are valid: true, expires at: 1761359853461
+[debug] [2025-10-25T01:41:28.059Z] Checked if tokens are valid: true, expires at: 1761359853461
+[debug] [2025-10-25T01:41:28.063Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=100
+[debug] [2025-10-25T01:41:53.110Z] *** [apiv2] error from fetch(https://firebase.googleapis.com/v1beta1/projects?pageSize=100, {"headers":{},"method":"GET","signal":{}}): FetchError: request to https://firebase.googleapis.com/v1beta1/projects?pageSize=100 failed, reason: 
+[debug] [2025-10-25T01:41:53.110Z] Failed to make request to https://firebase.googleapis.com/v1beta1/projects?pageSize=100
+[debug] [2025-10-25T01:41:54.086Z] FirebaseError: Failed to make request to https://firebase.googleapis.com/v1beta1/projects?pageSize=100
+    at RetryOperation._fn (C:\Users\USUARIO\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:261:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[error] 
+[error] Error: Failed to list Firebase projects. See firebase-debug.log for more info.
