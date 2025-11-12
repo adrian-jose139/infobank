@@ -87,7 +87,7 @@ export default function Configuracion() {
     <div className={`configuracion ${isDarkMode ? "dark" : ""}`}>
       <header className="config-header">
         <Link to="/dashboard" className="volver">
-          ← Volver al Inicio
+          Volver al Inicio
         </Link>
         <h2>⚙️ Configuración</h2>
       </header>
@@ -99,12 +99,7 @@ export default function Configuracion() {
         >
           🧍 Perfil
         </button>
-        <button
-          className={`tab-btn ${tab === "notificaciones" ? "active" : ""}`}
-          onClick={() => setTab("notificaciones")}
-        >
-          🔔 Notificaciones
-        </button>
+        
         <button
           className={`tab-btn ${tab === "apariencia" ? "active" : ""}`}
           onClick={() => setTab("apariencia")}
@@ -130,18 +125,12 @@ export default function Configuracion() {
               Correo Electrónico
               <input type="email" value={usuario.email || ''} disabled />
             </label>
-            <label>
-              Teléfono
-              <input type="text" value={usuario.telefono || ""} onChange={(e) => setUsuario({ ...usuario, telefono: e.target.value })}/>
-            </label>
+            
             <label>
               Área
               <input type="text" value={usuario.areaTrabajo || ''} onChange={(e) => setUsuario({ ...usuario, areaTrabajo: e.target.value })}/>
             </label>
-            <label>
-              Cargo
-              <input type="text" value={usuario.cargo || ''} onChange={(e) => setUsuario({ ...usuario, cargo: e.target.value })}/>
-            </label>
+            
           </div>
           <button onClick={handleGuardarCambios} className="btn-guardar">
             💾 Guardar Cambios

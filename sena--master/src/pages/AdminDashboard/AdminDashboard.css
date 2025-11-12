@@ -147,6 +147,72 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: background 0.3s ease, color 0.3s ease;
 }
+/* Contenedor de acciones */
+.course-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end; /* o flex-start, según prefieras */
+}
+
+/* Botón base */
+.course-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+}
+
+/* Botón Editar - Verde */
+.course-actions button:first-child {
+  background-color: #10b981;
+  color: white;
+}
+
+.course-actions button:first-child:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.25);
+}
+
+/* Botón Eliminar - Rojo */
+.course-actions button:last-child {
+  background-color: #ef4444;
+  color: white;
+}
+
+.course-actions button:last-child:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.25);
+}
+
+/* Efecto activo (opcional) */
+.course-actions button:active {
+  transform: translateY(0);
+}
+
+/* Responsive: apilar en móviles */
+@media (max-width: 480px) {
+  .course-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .course-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
 
 .course-card,
 .user-card {
@@ -744,4 +810,94 @@ body.dark,
 
 .bubble-actions button:last-child {
   color: #dc3545; /* Botón eliminar en rojo */
+}
+
+/* Acordeón de noticias en Admin */
+.news-list-acordeon {
+  margin-top: 20px;
+}
+
+.noticia-admin-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  margin: 12px 0;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: all 0.4s ease;
+  cursor: pointer;
+}
+
+.noticia-admin-card:hover {
+  box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+  transform: translateY(-4px);
+}
+
+.noticia-header {
+  padding: 18px 20px;
+  background: #f8f9fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.noticia-titulo-admin {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #1e293b;
+}
+
+.noticia-meta-admin {
+  display: flex;
+  gap: 16px;
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.flecha-acordeon {
+  font-size: 1.4rem;
+  transition: transform 0.3s ease;
+  color: #666;
+}
+
+.noticia-contenido-admin {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease, padding 0.5s ease;
+  background: #fdfdff;
+}
+
+.noticia-admin-card.expandida .noticia-contenido-admin {
+  max-height: 800px;
+  padding: 20px;
+}
+
+.descripcion-completa {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #334155;
+  margin-bottom: 16px;
+}
+
+.imagen-noticia-expandida {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin: 16px 0;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.acciones-expandida {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.acciones-expandida button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
 }

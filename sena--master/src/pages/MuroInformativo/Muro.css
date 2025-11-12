@@ -195,3 +195,44 @@
     display: none;
   }
 }
+
+/* Quita cualquier subrayado de texto en las tarjetas */
+.course-card,
+.card,
+.tarjeta,
+[class*="card"],
+[class*="course"] {
+  text-decoration: none !important;
+}
+
+/* Asegura que los enlaces dentro de la tarjeta no tengan subrayado */
+.course-card a,
+.card a,
+.tarjeta a,
+.course-actions a,
+* a {
+  text-decoration: none !important;
+  color: inherit;
+}
+
+/* Si usas <h3>, <h2>, etc. con subrayado por CSS */
+.course-card h1,
+.course-card h2,
+.course-card h3,
+.course-card h4,
+.course-card h5,
+.course-card p,
+.card-title,
+.course-title {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* Quita bordes o sombras que parezcan líneas */
+.course-card,
+.card {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important; /* o el color que uses */
+}

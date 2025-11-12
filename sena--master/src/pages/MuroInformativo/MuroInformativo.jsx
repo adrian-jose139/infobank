@@ -51,7 +51,7 @@ export default function MuroInformativo() {
   return (
     <main className={`muro ${isDarkMode ? "dark" : ""}`}>
       <header className="muro__topbar">
-        <Link to="/dashboard" className="muro__back">← Volver al Inicio</Link>
+        <Link to="/dashboard" className="muro__back">Volver al Inicio</Link>
         <div className="muro__title">
           <MuroIconTop />
           <h1>Muro Informativo</h1>

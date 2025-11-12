@@ -160,9 +160,7 @@ export default function Login() {
             required
           />
 
-          <p className="forgot-password" onClick={handleOlvidarContrasena}>
-            ¿Olvidaste tu contraseña?
-          </p>
+
 
           <button type="submit" disabled={loading}>
             {loading ? "Ingresando..." : "Ingresar"}
@@ -170,10 +168,10 @@ export default function Login() {
         </form>
 
         {mensaje && <p>{mensaje}</p>}
-
-        <p>
-          ¿No tienes cuenta? <Link to="/register">Regístrate aquí</Link>
+        <p className="forgot-password" onClick={handleOlvidarContrasena}>
+          ¿Olvidaste tu contraseña?
         </p>
+
       </div>
     </div>
   );

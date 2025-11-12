@@ -137,3 +137,38 @@
   align-items: center;
   gap: 0.5rem;
 }
+/* Pega esto al final de tu archivo Noticias.css */
+
+/* 1. Cambia el cursor para que el usuario sepa que puede hacer clic */
+.noticia-card-pro.clickable {
+  cursor: pointer;
+}
+
+/* 2. Estilo de la descripción por defecto (colapsada) */
+.card-description-pro {
+  /* Establecemos una altura máxima (ej: 3 líneas de texto) */
+  line-height: 1.5em; /* Ajusta según tu 'font-size' */
+  max-height: 4.5em;  /* (1.5em * 3 líneas) */
+  
+  /* Oculta el texto que se desborda */
+  overflow: hidden;
+
+  /* Muestra "..." al final del texto cortado */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3; /* Número de líneas */
+  text-overflow: ellipsis;
+
+  /* Animación suave para la altura */
+  transition: max-height 0.4s ease-in-out;
+}
+
+/* 3. Estilo de la descripción cuando se expande */
+.card-description-pro.expanded {
+  /* Le damos una altura máxima muy grande para que quepa todo */
+  max-height: 1000px; 
+  
+  /* Quitamos el límite de líneas para mostrar todo */
+  -webkit-line-clamp: unset;
+  display: block;
+}

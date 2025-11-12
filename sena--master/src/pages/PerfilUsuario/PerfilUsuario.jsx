@@ -169,7 +169,7 @@ export default function PerfilUsuario() {
     <main className="perfil">
       <header className="perfil__header">
         <button className="btn btn--back" onClick={() => navigate("/dashboard")}>
-          ← Volver al Inicio
+           Volver al Inicio
         </button>
         <h1>Mi Perfil</h1>
       </header>
@@ -187,7 +187,6 @@ export default function PerfilUsuario() {
             <ul className="info-list">
               <li>📧 {usuario.email || "—"}</li>
               <li>🏢 Área: {usuario.areaTrabajo || "—"}</li>
-              <li>🗓️ Ingreso: {formatoFecha(usuario.creadoEn)}</li>
             </ul>
           </div>
 
@@ -269,28 +268,7 @@ export default function PerfilUsuario() {
             </ul>
           </div>
 
-          <div className="perfil__card">
-            <h3>🎓 Certificados Obtenidos</h3>
-            {completed.some((e) => e.certificateUrl) ? (
-              <ul className="course-list">
-                {completed
-                  .filter((e) => e.certificateUrl)
-                  .map((e) => {
-                    const curso = coursesMap[e.courseId] || {};
-                    return (
-                      <li key={e.id}>
-                        <span>{curso.nombre || e.courseId}</span>
-                        <a className="badge" href={e.certificateUrl} target="_blank" rel="noreferrer">
-                          Descargar
-                        </a>
-                      </li>
-                    );
-                  })}
-              </ul>
-            ) : (
-              <p className="muted">Tus certificados aparecerán aquí cuando estén disponibles.</p>
-            )}
-          </div>
+          
         </section>
       </section>
     </main>

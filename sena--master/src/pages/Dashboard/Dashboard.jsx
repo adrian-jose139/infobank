@@ -214,46 +214,6 @@ export default function Dashboard() {
 
         {/* 🔹 Botones de acción */}
         <div className="dash__actions">
-          {/* --- 🔔 ÁREA DE NOTIFICACIONES --- */}
-          <div className="notification-area">
-            {/* Botón de la campana */}
-            <button
-              className="btn btn--ghost btn--icon" // Reutilizamos tus clases
-              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              aria-label="Abrir notificaciones"
-            >
-              <BellIcon />
-              {/* <span className="notification-badge"></span> (Para el punto rojo) */}
-            </button>
-
-            {/* Panel desplegable (renderizado condicional) */}
-            {isNotificationsOpen && (
-              <div className="notifications-dropdown">
-                <div className="notifications-header">
-                  <h3>Notificaciones</h3>
-                  <button
-                    onClick={() => setIsNotificationsOpen(false)}
-                    aria-label="Cerrar notificaciones"
-                  >
-                    &times;
-                  </button>
-                </div>
-
-                <ul className="notifications-list">
-                  {staticNotifications.map((notif) => (
-                    <li key={notif.id} className="notification-item">
-                      <div className="notification-icon">{notif.icon}</div>
-                      <div className="notification-content">
-                        <strong>{notif.title}</strong>
-                        <p>{notif.description}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-          {/* --- 🔔 FIN DE NOTIFICACIONES --- */}
 
           <Link className="btn btn--profile" to="/perfil">
             <UserIcon /> Mi Perfil

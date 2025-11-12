@@ -98,7 +98,7 @@ export default function Soporte() {
       {/* 🔙 Botón de regreso */}
       <div className="volver-inicio">
         <Link to="/dashboard" className="btn-volver">
-          ← Volver al Inicio
+           Volver al Inicio
         </Link>
       </div>
 

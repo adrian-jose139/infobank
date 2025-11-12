@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState("cursos");
 
   // ===== Cursos
-const [cursos, setCursos] = useState([]);
+  const [cursos, setCursos] = useState([]);
   const [editandoCurso, setEditandoCurso] = useState(null);
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -72,6 +72,13 @@ const [cursos, setCursos] = useState([]);
   const [previewNoticia, setPreviewNoticia] = useState("");
   const [editarNoticiaId, setEditarNoticiaId] = useState(null);
   const [editando, setEditando] = useState(false); // Boolean for edit mode
+
+  // Estado para el acordeón de noticias
+  const [idExpandido, setIdExpandido] = useState(null);
+
+  const handleCardClick = (id) => {
+    setIdExpandido(prev => (prev === id ? null : id));
+  };
 
 
   // 🔹 Categorías predefinidas para el acordeón
@@ -214,6 +221,16 @@ const [cursos, setCursos] = useState([]);
         ? n.fechaPublicacion.toDate().toISOString().split("T")[0]
         : ""
     );
+
+    setTimeout(() => {
+      const formElement = document.getElementById("form-noticia");
+      if (formElement) {
+        formElement.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }, 50);
   };
 
 
@@ -396,7 +413,7 @@ const [cursos, setCursos] = useState([]);
     if (!nombre || !descripcion || !duracion || !fechaLimite || !cupos) {
       return Swal.fire("Campos incompletos", "Completa todos los campos.", "warning");
     }
-    
+
 
     try {
       const payload = {
@@ -437,6 +454,10 @@ const [cursos, setCursos] = useState([]);
     setPreview(c.imagen || "");
     setCupos(c.cupos || "");
     setArchivoEnlace(c.archivoEnlace || "");
+
+    setTimeout(() => {
+      document.getElementById("form-curso").scrollIntoView({ behavior: "smooth" });
+    }, 50);
   };
 
   const handleEliminarCurso = async (id) => {
@@ -463,7 +484,7 @@ const [cursos, setCursos] = useState([]);
     setPreview(e.target.value);
   };
 
- // ===== Usuarios CRUD =====
+  // ===== Usuarios CRUD =====
   const handleRegistrarUsuario = async (e) => {
     e.preventDefault();
     // Tu validación original de campos vacíos
@@ -525,7 +546,7 @@ const [cursos, setCursos] = useState([]);
       try {
         await sendEmailVerification(user);
       } catch (emailError) {
-         console.warn("No se pudo enviar email de verificación", emailError); // Usamos warn en lugar de catch vacío
+        console.warn("No se pudo enviar email de verificación", emailError); // Usamos warn en lugar de catch vacío
       }
 
       // Tu mensaje original de éxito y limpieza de formulario
@@ -540,10 +561,10 @@ const [cursos, setCursos] = useState([]);
     } catch (err) {
       // Tu manejo de errores original
       if (err.code === 'auth/email-already-in-use') {
-         Swal.fire("❌ Error", "Este correo electrónico ya está registrado.", "error");
+        Swal.fire("❌ Error", "Este correo electrónico ya está registrado.", "error");
       } else {
-         console.error("Error registrando usuario:", err); // Añadimos log para depuración
-         Swal.fire("❌ Error", err.message || "No se pudo registrar", "error");
+        console.error("Error registrando usuario:", err); // Añadimos log para depuración
+        Swal.fire("❌ Error", err.message || "No se pudo registrar", "error");
       }
     } finally {
       // Tu finally original
@@ -551,10 +572,16 @@ const [cursos, setCursos] = useState([]);
     }
   };
 
-  const handleToggleBloqueo = async (u) => {
-    const nuevo = u.estado === "Bloqueado" ? "Activo" : "Bloqueado";
-    await updateDoc(doc(db, "usuarios", u.id), { estado: nuevo });
-  };
+ const handleToggleBloqueo = async (u) => {
+  const nuevoEstado = u.estado === "Inactivo" ? "Activo" : "Inactivo";
+  
+  await updateDoc(doc(db, "usuarios", u.id), { 
+    estado: nuevoEstado,
+    bloqueadoEn: nuevoEstado === "Inactivo" ? new Date() : null
+  });
+
+  // El usuario será expulsado automáticamente en < 2 segundos
+};
 
   const handleEliminarUsuario = async (u) => {
     const ok = await Swal.fire({ title: `¿Eliminar a ${u.nombre}?`, icon: "warning", showCancelButton: true });
@@ -563,17 +590,22 @@ const [cursos, setCursos] = useState([]);
     Swal.fire("🗑️ Eliminado", "", "success");
   };
 
+  // SCROLL AL MODAL DE EDICIÓN DE USUARIO
   const startEditUser = (u) => {
-  // 1. Esta línea abre el modal
-  setEditingUser({ ...u });
+    setEditingUser({ ...u });
 
-  // 2. Esta línea sube la página (debe ir aquí dentro)
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth",
-  });};
+    setTimeout(() => {
+      const formElement = document.getElementById("edit-user-form");
+      if (formElement) {
+        formElement.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }, 50);
+  };
   const handleEditChange = (e) => setEditingUser({ ...editingUser, [e.target.name]: e.target.value });
-  
+
   window.scrollTo({
     top: 0,
     behavior: "smooth",
@@ -597,131 +629,133 @@ const [cursos, setCursos] = useState([]);
 
   // Dentro de AdminDashboard.js, reemplazar la función responderMensaje y la sección de mensajería
 
-// ===== Mensajes (Admin)
-const marcarLeido = async (m) => {
-  await updateDoc(doc(db, "mensajes", m.id), { estado: "leído" });
-};
+  // ===== Mensajes (Admin)
+  const marcarLeido = async (m) => {
+    await updateDoc(doc(db, "mensajes", m.id), { estado: "leído" });
+  };
 
-const eliminarMensaje = async (m) => {
-  const ok = await Swal.fire({
-    title: "¿Eliminar mensaje?",
-    icon: "warning",
-    showCancelButton: true,
-  });
-  if (!ok.isConfirmed) return;
-  await deleteDoc(doc(db, "mensajes", m.id));
-};
-
-const responderMensaje = async (m) => {
-  const { value: texto } = await Swal.fire({
-    title: `Responder: ${m.asunto}`,
-    input: "textarea",
-    inputPlaceholder: "Escribe tu respuesta…",
-    showCancelButton: true,
-    confirmButtonText: "Enviar respuesta",
-  });
-  if (!texto) return;
-  try {
-    await addDoc(collection(db, "mensajes_respuestas"), {
-      mensajeId: m.id,
-      respuesta: texto,
-      respondidoPor: auth.currentUser?.email || "admin",
-      remitente: auth.currentUser?.email || "admin",
-      respondidoEn: serverTimestamp(),
+  const eliminarMensaje = async (m) => {
+    const ok = await Swal.fire({
+      title: "¿Eliminar mensaje?",
+      icon: "warning",
+      showCancelButton: true,
     });
-    await updateDoc(doc(db, "mensajes", m.id), { estado: "respondido", respondidoEn: serverTimestamp() ,respuesta: texto });
-    Swal.fire("✅ Respuesta enviada", "", "success");
-  } catch (error) {
-    Swal.fire("Error", "No se pudo enviar la respuesta", "error");
-  }
-};
+    if (!ok.isConfirmed) return;
+    await deleteDoc(doc(db, "mensajes", m.id));
+  };
 
-// Añadir carga de respuestas para mostrar el hilo en el admin
-const [respuestas, setRespuestas] = useState({});
+  const responderMensaje = async (m) => {
+    const { value: texto } = await Swal.fire({
+      title: `Responder: ${m.asunto}`,
+      input: "textarea",
+      inputPlaceholder: "Escribe tu respuesta…",
+      showCancelButton: true,
+      confirmButtonText: "Enviar respuesta",
+    });
+    if (!texto) return;
+    try {
+      await addDoc(collection(db, "mensajes_respuestas"), {
+        mensajeId: m.id,
+        respuesta: texto,
+        respondidoPor: auth.currentUser?.email || "admin",
+        remitente: auth.currentUser?.email || "admin",
+        respondidoEn: serverTimestamp(),
+      });
+      await updateDoc(doc(db, "mensajes", m.id), { estado: "respondido", respondidoEn: serverTimestamp(), respuesta: texto });
+      Swal.fire("✅ Respuesta enviada", "", "success");
+    } catch (error) {
+      Swal.fire("Error", "No se pudo enviar la respuesta", "error");
+    }
+  };
 
-useEffect(() => {
-  const mensajesQuery = query(
-    collection(db, "mensajes"),
-    orderBy("creadoEn", "desc")
-  );
+  // Añadir carga de respuestas para mostrar el hilo en el admin
+  const [respuestas, setRespuestas] = useState({});
 
-  const unsubscribeMensajes = onSnapshot(mensajesQuery, (snapshot) => {
-    const mensajesData = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setMensajes(mensajesData);
+  useEffect(() => {
+    const mensajesQuery = query(
+      collection(db, "mensajes"),
+      orderBy("creadoEn", "desc")
+    );
 
-    // Cargar respuestas para cada mensaje
-    mensajesData.forEach((mensaje) => {
-      const respuestasQuery = query(
-        collection(db, "mensajes_respuestas"),
-        where("mensajeId", "==", mensaje.id),
-        orderBy("respondidoEn", "asc")
-      );
-      onSnapshot(respuestasQuery, (resSnapshot) => {
-        const respuestasData = resSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setRespuestas((prev) => ({
-          ...prev,
-          [mensaje.id]: respuestasData,
-        }));
+    const unsubscribeMensajes = onSnapshot(mensajesQuery, (snapshot) => {
+      const mensajesData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMensajes(mensajesData);
+
+      // Cargar respuestas para cada mensaje
+      mensajesData.forEach((mensaje) => {
+        const respuestasQuery = query(
+          collection(db, "mensajes_respuestas"),
+          where("mensajeId", "==", mensaje.id),
+          orderBy("respondidoEn", "asc")
+        );
+        onSnapshot(respuestasQuery, (resSnapshot) => {
+          const respuestasData = resSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setRespuestas((prev) => ({
+            ...prev,
+            [mensaje.id]: respuestasData,
+          }));
+        });
       });
     });
-  });
 
-  return unsubscribeMensajes;
-}, []);
+    return unsubscribeMensajes;
+  }, []);
 
-// Sección de mensajería en el render
-{tab === "mensajes" && (
-  <section className="users">
-    <div className="courses__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <h2>Mensajería</h2>
-    </div>
+  // Sección de mensajería en el render
+  {
+    tab === "mensajes" && (
+      <section className="users">
+        <div className="courses__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2>Mensajería</h2>
+        </div>
 
-    {mensajes.length === 0 && <p>No hay mensajes.</p>}
+        {mensajes.length === 0 && <p>No hay mensajes.</p>}
 
-    {mensajes.map((m) => (
-      <div key={m.id} className="msg-card">
-        <div className="msg-main">
-          <div className="msg-top">
-            <strong>{m.asunto}</strong>
-            {m.estado === "pendiente" ? (
-              <span className="badge badge--warn">Pendiente</span>
-            ) : (
-              <span className="badge">Respondido</span>
-            )}
-          </div>
-          <p className="msg-content"><strong>{m.remitente}:</strong> {m.contenido}</p>
-          <small>
-            Enviado el: {m.creadoEn?.toDate?.().toLocaleString?.() || "—"}
-          </small>
-          <div className="respuesta">
-            {(respuestas[m.id] || []).map((resp, index) => (
-              <div key={index} className="respuesta-item">
-                <p><strong>{resp.respondidoPor}:</strong> {resp.respuesta}</p>
-                <small>
-                  Respondido el:{" "}
-                  {resp.respondidoEn?.toDate?.().toLocaleString?.() || "—"}
-                </small>
+        {mensajes.map((m) => (
+          <div key={m.id} className="msg-card">
+            <div className="msg-main">
+              <div className="msg-top">
+                <strong>{m.asunto}</strong>
+                {m.estado === "pendiente" ? (
+                  <span className="badge badge--warn">Pendiente</span>
+                ) : (
+                  <span className="badge">Respondido</span>
+                )}
               </div>
-            ))}
+              <p className="msg-content"><strong>{m.remitente}:</strong> {m.contenido}</p>
+              <small>
+                Enviado el: {m.creadoEn?.toDate?.().toLocaleString?.() || "—"}
+              </small>
+              <div className="respuesta">
+                {(respuestas[m.id] || []).map((resp, index) => (
+                  <div key={index} className="respuesta-item">
+                    <p><strong>{resp.respondidoPor}:</strong> {resp.respuesta}</p>
+                    <small>
+                      Respondido el:{" "}
+                      {resp.respondidoEn?.toDate?.().toLocaleString?.() || "—"}
+                    </small>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="msg-actions">
+              {m.estado === "pendiente" && (
+                <button className="btn btn--save" onClick={() => marcarLeido(m)}>Marcar leído</button>
+              )}
+              <button className="btn btn--edit" onClick={() => responderMensaje(m)}>Responder</button>
+              <button className="btn btn--delete" onClick={() => eliminarMensaje(m)}>Eliminar</button>
+            </div>
           </div>
-        </div>
-        <div className="msg-actions">
-          {m.estado === "pendiente" && (
-            <button className="btn btn--save" onClick={() => marcarLeido(m)}>Marcar leído</button>
-          )}
-          <button className="btn btn--edit" onClick={() => responderMensaje(m)}>Responder</button>
-          <button className="btn btn--delete" onClick={() => eliminarMensaje(m)}>Eliminar</button>
-        </div>
-      </div>
-    ))}
-  </section>
-)}
+        ))}
+      </section>
+    )
+  }
 
   // ===== Notificaciones (Admin)
   const marcarNotiLeida = async (n) => {
@@ -828,7 +862,7 @@ useEffect(() => {
         </button>
       </div>
 
-            {/* CONTENT */}
+      {/* CONTENT */}
       <div className="tab-content">
         {/* ===== CURSOS ===== */}
         {tab === "cursos" && (
@@ -851,12 +885,22 @@ useEffect(() => {
                     <p>{c.descripcion}</p>
                     <small>Duración: {c.duracion}</small><br />
                     <small>Fecha Límite: {c.fechaLimite}</small><br />
-                    <small>Cupos: {c.cupos}</small><br />
+                    
+                    {/*
+                     * ===================================================
+                     * AQUÍ ESTÁ EL CAMBIO
+                     *
+                     * Asumimos que tu objeto 'c' (curso) ahora trae
+                     * una nueva propiedad 'inscritos' desde el backend.
+                     * ===================================================
+                     */}
+                    <small>Cupos: {c.inscritos} / {c.cupos}</small><br />
+
                     {c.enlaceEvaluacion && <small>Enlace de Evaluación: <a href={c.enlaceEvaluacion} target="_blank" rel="noopener noreferrer">Ver Evaluación</a></small>}
                   </div>
                   <div className="course-actions">
-                    <button onClick={() => handleEditarCurso(c)}>Editar</button>
-                    <button onClick={() => handleEliminarCurso(c.id)}>Eliminar</button>
+                    <button onClick={() => handleEditarCurso(c)}>✏️Editar</button>
+                    <button onClick={() => handleEliminarCurso(c.id)}>🗑️Eliminar</button>
                   </div>
                 </div>
               ))}
@@ -895,7 +939,7 @@ useEffect(() => {
           </section>
         )}
 
-       {/* ===== USUARIOS ===== */}
+        {/* ===== USUARIOS ===== */}
         {tab === "usuarios" && (
           <section className="users">
             <h2>Gestión de Usuarios</h2>
@@ -971,37 +1015,37 @@ useEffect(() => {
               </button>
             </form>
 
-           {/* --- FORMULARIO DE EDICIÓN (MODAL) --- */}
-{editingUser && (
-  <div className="modal-backdrop">
-    <form onSubmit={saveEditUser} className="user-form modal-content">
-      <h3>✏️ Editar usuario</h3>
-      <label>Nombre</label>
-      {/* ... (todos tus inputs: nombre, apellido, email, etc.) ... */}
-      <input name="nombre" type="text" value={editingUser.nombre || ""} onChange={handleEditChange} required />
-      <label>Apellido</label>
-      <input name="apellido" type="text" value={editingUser.apellido || ""} onChange={handleEditChange} required />
-      <label>Email</label>
-      <input name="email" type="email" value={editingUser.email || ""} onChange={handleEditChange} required />
-      <label>Área de Trabajo</label>
-      <input name="areaTrabajo" type="text" value={editingUser.areaTrabajo || ""} onChange={handleEditChange} required />
-      <label>Rol</label>
-      <select name="rol" value={editingUser.rol || "usuario"} onChange={handleEditChange} required>
-        <option value="usuario">Usuario</option>
-        <option value="admin">Administrador</option>
-      </select>
-      <label>Estado</label>
-      <select name="estado" value={editingUser.estado || "Activo"} onChange={handleEditChange} required>
-        <option value="Activo">Activo</option>
-        <option value="Bloqueado">Bloqueado</option>
-      </select>
-      <div className="form-actions">
-        <button type="submit" className="btn btn--save">Guardar cambios</button>
-        <button type="button" className="btn btn--cancel" onClick={() => setEditingUser(null)}>Cancelar</button>
-      </div>
-    </form>
-  </div>
-)}
+            {/* --- FORMULARIO DE EDICIÓN (MODAL) --- */}
+            {editingUser && (
+              <div className="modal-backdrop">
+                <form id="edit-user-form" onSubmit={saveEditUser} className="user-form modal-content">
+                  <h3>✏️ Editar usuario</h3>
+                  <label>Nombre</label>
+                  {/* ... (todos tus inputs: nombre, apellido, email, etc.) ... */}
+                  <input name="nombre" type="text" value={editingUser.nombre || ""} onChange={handleEditChange} required />
+                  <label>Apellido</label>
+                  <input name="apellido" type="text" value={editingUser.apellido || ""} onChange={handleEditChange} required />
+                  <label>Email</label>
+                  <input name="email" type="email" value={editingUser.email || ""} onChange={handleEditChange} required />
+                  <label>Área de Trabajo</label>
+                  <input name="areaTrabajo" type="text" value={editingUser.areaTrabajo || ""} onChange={handleEditChange} required />
+                  <label>Rol</label>
+                  <select name="rol" value={editingUser.rol || "usuario"} onChange={handleEditChange} required>
+                    <option value="usuario">Usuario</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                  <label>Estado</label>
+                  <select name="estado" value={editingUser.estado || "Activo"} onChange={handleEditChange} required>
+                    <option value="Activo">Activo</option>
+                    <option value="Bloqueado">Bloqueado</option>
+                  </select>
+                  <div className="form-actions">
+                    <button type="submit" className="btn btn--save">Guardar cambios</button>
+                    <button type="button" className="btn btn--cancel" onClick={() => setEditingUser(null)}>Cancelar</button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             {/* --- LISTA DE USUARIOS --- */}
             <div className="user-list">
@@ -1016,15 +1060,29 @@ useEffect(() => {
                       {u.estado || "Activo"}
                     </span>
                     <p>Rol: {u.rol}</p>
+                    {/* ← ÚLTIMO ACCESO */}
+                    <p style={{ fontSize: "0.85rem", color: "#555", marginTop: "6px" }}>
+                      Último acceso: {" "}
+                      {u.ultimoAcceso
+                        ? u.ultimoAcceso.toDate().toLocaleString("es-CO", {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "Nunca"}
+                    </p>
                   </div>
                   <div className="user-actions">
                     <button className="btn btn--edit" onClick={() => startEditUser(u)}>✏️ Editar</button>
                     {/* ✅ Texto del botón Bloquear/Desbloquear */}
                     <button
-                      className={`btn ${u.estado === 'Bloqueado' ? 'btn--activate' : 'btn--block'}`}
+                      className={`btn ${u.estado === "Inactivo" ? "btn--activate" : "btn--block"}`}
                       onClick={() => handleToggleBloqueo(u)}
+                      title={u.estado === "Inactivo" ? "Reactivar cuenta" : "Bloquear acceso inmediato"}
                     >
-                      {u.estado === "Bloqueado" ? "✅ Activar" : "🚫 Bloquear"}
+                      {u.estado === "Inactivo" ? "Reactivar" : "Desactivar cuenta"}
                     </button>
                     <button className="btn btn--delete" onClick={() => handleEliminarUsuario(u)}>🗑️ Eliminar</button>
                   </div>
@@ -1098,8 +1156,7 @@ useEffect(() => {
             ))}
           </section>
         )}
-
-        {/* ===== NOTICIAS ===== */}
+        {/* ===== NOTICIAS CON ACORDEÓN (IMAGEN PEQUEÑA) ===== */}
         {tab === "noticias" && (
           <section className="users">
             <div
@@ -1113,61 +1170,31 @@ useEffect(() => {
               <h2>Gestión de Noticias</h2>
             </div>
 
-            {/* FORMULARIO DE PUBLICACIÓN / EDICIÓN */}
+            {/* FORMULARIO (sin cambios) */}
             <div className="add-course">
-              <h2>{editarNoticiaId ? "✏️ Editar noticia" : "➕ Publicar nueva noticia"}</h2>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (editarNoticiaId) {
-                    actualizarNoticia();
-                  } else {
-                    publicarNoticia();
-                  }
-                }}
-                className="form"
-              >
-                <input
-                  type="text"
-                  placeholder="Título de la noticia"
-                  value={tituloNoticia}
-                  onChange={(e) => setTituloNoticia(e.target.value)}
-                  required
-                />
-                <textarea
-                  placeholder="Contenido de la noticia"
-                  value={contenidoNoticia}
-                  onChange={(e) => setContenidoNoticia(e.target.value)}
-                  required
-                />
+              <h2>{editarNoticiaId ? "Editar noticia" : "Publicar nueva noticia"}</h2>
+              <form id="form-noticia" onSubmit={editando ? actualizarNoticia : publicarNoticia} className="form">
+                <input type="text" placeholder="Título de la noticia" value={tituloNoticia} onChange={(e) => setTituloNoticia(e.target.value)} required />
+                <textarea placeholder="Contenido de la noticia" value={contenidoNoticia} onChange={(e) => setContenidoNoticia(e.target.value)} required />
                 <input
                   type="text"
                   placeholder="URL de imagen (opcional)"
-                  value={imagenUrl} // Fixed
+                  value={imagenUrl}
                   onChange={(e) => {
                     setImagenUrl(e.target.value);
                     setPreviewNoticia(e.target.value);
                   }}
                 />
-
-                {previewNoticia && ( // Fixed
+                {previewNoticia && (
                   <img
                     src={previewNoticia}
                     alt="Vista previa"
-                    style={{
-                      width: 250,
-                      borderRadius: 8,
-                      marginTop: 10,
-                      border: "1px solid #ccc",
-                    }}
-                    onError={(e) =>
-                    (e.target.src =
-                      "https://via.placeholder.com/250x150?text=No+disponible")
-                    }
+                    style={{ width: 250, borderRadius: 8, marginTop: 10, border: "1px solid #ccc" }}
+                    onError={(e) => (e.target.src = "https://via.placeholder.com/250x150?text=No+disponible")}
                   />
                 )}
 
-                {/* 🔽 Selector de Categoría con Acordeón (unchanged) */}
+                {/* Selector de categoría */}
                 <div className="categoria-selector" style={{ position: "relative" }}>
                   <input
                     type="text"
@@ -1175,54 +1202,22 @@ useEffect(() => {
                     value={categoria}
                     readOnly
                     onClick={() => setMostrarAcordeon(!mostrarAcordeon)}
-                    style={{
-                      cursor: "pointer",
-                      backgroundColor: "#fff",
-                      border: "1px solid #ccc",
-                      padding: "8px",
-                      borderRadius: "6px",
-                      width: "100%",
-                    }}
+                    style={{ cursor: "pointer", backgroundColor: "#fff", border: "1px solid #ccc", padding: "8px", borderRadius: "6px", width: "100%" }}
                   />
-
                   {mostrarAcordeon && (
-                    <div
-                      className="acordeon-categorias"
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        right: 0,
-                        backgroundColor: "#f9f9f9",
-                        border: "1px solid #ccc",
-                        borderRadius: "6px",
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-                        zIndex: 1000,
-                        maxHeight: "200px",
-                        overflowY: "auto",
-                        marginTop: "4px",
-                      }}
-                    >
+                    <div className="acordeon-categorias" style={{
+                      position: "absolute", top: "100%", left: 0, right: 0, backgroundColor: "#f9f9f9",
+                      border: "1px solid #ccc", borderRadius: "6px", boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                      zIndex: 1000, maxHeight: "200px", overflowY: "auto", marginTop: "4px"
+                    }}>
                       {categoriasBanco.map((cat, index) => (
-                        <div
-                          key={index}
-                          onClick={() => {
-                            setCategoria(cat);
-                            setMostrarAcordeon(false);
-                          }}
+                        <div key={index} onClick={() => { setCategoria(cat); setMostrarAcordeon(false); }}
                           style={{
-                            padding: "10px",
-                            cursor: "pointer",
-                            borderBottom: "1px solid #eee",
-                            backgroundColor: categoria === cat ? "#e0f7fa" : "transparent",
+                            padding: "10px", cursor: "pointer", borderBottom: "1px solid #eee",
+                            backgroundColor: categoria === cat ? "#e0f7fa" : "transparent"
                           }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#f0f0f0")
-                          }
-                          onMouseLeave={(e) =>
-                          (e.currentTarget.style.backgroundColor =
-                            categoria === cat ? "#e0f7fa" : "transparent")
-                          }
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f0f0f0"}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = categoria === cat ? "#e0f7fa" : "transparent"}
                         >
                           {cat}
                         </div>
@@ -1231,38 +1226,15 @@ useEffect(() => {
                   )}
                 </div>
 
-                <input
-                  type="text"
-                  placeholder="Autor"
-                  value={autor || "Administrador"}
-                  readOnly // Fixed: use state, allow editing if needed
-                  // onChange={(e) => setAutor(e.target.value)} // Add if you want editable
-                  style={{
-                    backgroundColor: "#f3f3f3",
-                    border: "1px solid #ccc",
-                    padding: "8px",
-                    borderRadius: "6px",
-                    width: "100%",
-                    color: "#555",
-                  }}
-                />
-                <input
-                  type="date"
-                  value={fechaPublicacion}
-                  onChange={(e) => setFechaPublicacion(e.target.value)}
-                />
+                <input type="text" placeholder="Autor" value={autor || "Administrador"} readOnly style={{ backgroundColor: "#f3f3f3", border: "1px solid #ccc", padding: "8px", borderRadius: "6px", width: "100%", color: "#555" }} />
+                <input type="date" value={fechaPublicacion} onChange={(e) => setFechaPublicacion(e.target.value)} />
 
                 <div style={{ display: "flex", gap: "10px" }}>
                   <button type="submit" className="btn btn--save">
                     {editarNoticiaId ? "Actualizar Noticia" : "Publicar Noticia"}
                   </button>
-
                   {editarNoticiaId && (
-                    <button
-                      type="button"
-                      onClick={cancelarEdicion}
-                      className="btn btn--cancel"
-                    >
+                    <button type="button" onClick={cancelarEdicion} className="btn btn--cancel">
                       Cancelar
                     </button>
                   )}
@@ -1270,63 +1242,79 @@ useEffect(() => {
               </form>
             </div>
 
-            {/* LISTADO DE NOTICIAS (unchanged) */}
-            <div className="news-list">
+            {/* LISTADO CON ACORDEÓN - IMAGEN PEQUEÑA */}
+            <div className="news-list-acordeon">
               {noticias.length === 0 ? (
-                <p className="text-center text-gray-500 mt-4">
-                  No hay noticias publicadas.
-                </p>
+                <p className="text-center text-gray-500 mt-4">No hay noticias publicadas.</p>
               ) : (
                 noticias.map((n) => {
-                  const imagenSrc =
-                    n.imagen && n.imagen.startsWith("http")
-                      ? n.imagen
-                      : "https://via.placeholder.com/300x200?text=Sin+imagen";
+                  const estaExpandida = idExpandido === n.id;
+                  const imagenSrc = n.imagen && n.imagen.startsWith("http")
+                    ? n.imagen
+                    : "https://via.placeholder.com/300x200?text=Sin+imagen";
 
                   return (
-                    <div key={n.id} className="course-card">
-                      <div className="news-image-container">
-                        <img
-                          src={imagenSrc}
-                          alt={n.titulo}
-                          className="news-image"
-                          onError={(e) =>
-                          (e.target.src =
-                            "https://via.placeholder.com/300x200?text=No+disponible")
-                          }
-                        />
+                    <div
+                      key={n.id}
+                      className={`noticia-admin-card ${estaExpandida ? 'expandida' : ''}`}
+                      onClick={() => handleCardClick(n.id)}
+                    >
+                      {/* Header clickeable */}
+                      <div className="noticia-header">
+                        <div className="header-info">
+                          <h3 className="noticia-titulo-admin">{n.titulo}</h3>
+                          <div className="noticia-meta-admin">
+                            <span className="categoria-tag">{n.categoria || "General"}</span>
+                            <span>
+                              {n.fechaPublicacion?.toDate?.().toLocaleDateString?.("es-ES") || "—"}
+                            </span>
+                            <span>Por {n.autor || "Administrador"}</span>
+                          </div>
+                        </div>
+                        <span className="flecha-acordeon">
+                          {estaExpandida ? '▲' : '▼'}
+                        </span>
                       </div>
 
-                      <div className="news-info">
-                        <h3 className="news-title">{n.titulo}</h3>
-                        <span className="news-tag">{n.categoria || "General"}</span>
-                        <p className="news-description">{n.descripcion}</p>
+                      {/* Contenido expandido - IMAGEN PEQUEÑA */}
+                      <div className="noticia-contenido-admin">
+                        <div className="contenido-con-imagen">
+                          {/* Imagen pequeña (igual que antes) */}
+                          {n.imagen && (
+                            <div className="imagen-pequena-container">
+                              <img
+                                src={imagenSrc}
+                                alt={n.titulo}
+                                className="imagen-pequena"
+                                onError={(e) => (e.target.src = "https://via.placeholder.com/120x80?text=No+img")}
+                              />
+                            </div>
+                          )}
 
-                        <div className="news-meta">
-                          <span className="news-date">
-                            📅{" "}
-                            {n.fechaPublicacion?.toDate?.().toLocaleDateString?.(
-                              "es-ES",
-                              { year: "numeric", month: "2-digit", day: "2-digit" }
-                            ) || "—"}
-                          </span>
-                          <span className="news-author">
-                            👤 {n.autor || "Administrador"}
-                          </span>
+                          <div className="texto-expandido">
+                            <p className="descripcion-completa">{n.descripcion}</p>
+                          </div>
                         </div>
 
-                        <div className="news-actions">
+                        {/* Botones siempre visibles al expandir */}
+                        <div className="acciones-expandida">
                           <button
                             className="btn btn--edit"
-                            onClick={() => editarNoticia(n)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              editarNoticia(n);
+                            }}
                           >
-                            ✏️ Editar
+                            Editar
                           </button>
                           <button
                             className="btn btn--delete"
-                            onClick={() => eliminarNoticia(n.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              eliminarNoticia(n.id);
+                            }}
                           >
-                            🗑️ Eliminar
+                            Eliminar
                           </button>
                         </div>
                       </div>
@@ -1337,7 +1325,6 @@ useEffect(() => {
             </div>
           </section>
         )}
-
 
 
 
@@ -1526,10 +1513,10 @@ useEffect(() => {
                             hour: "2-digit",
                             minute: "2-digit",
                           }) || "Fecha no disponible"}
-                          
+
                           {m.fechaActualizada && (
                             <>
-                            <br />
+                              <br />
                               {" · Actualizado el: "}
                               {m.fechaActualizada?.toDate?.().toLocaleDateString?.("es-ES", {
                                 year: "numeric",

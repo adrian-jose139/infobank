@@ -78,7 +78,7 @@ const AcercaDeStyles = () => (
       font-size: 0.9rem;
       font-weight: 600;
       color: #555;
-      background-color: #f0f0f0;
+      background-color: #2563eb;
       border: none;
       padding: 10px 16px;
       border-radius: 6px;
@@ -108,14 +108,14 @@ export default function AcercaDe() {
         
         {/* Botón para volver al Dashboard */}
         <button onClick={() => navigate("/dashboard")} className="btn--back">
-          &larr; Volver al Inicio
+          Volver al Inicio
         </button>
 
         <h1>Acerca de InfoBank</h1>
 
         <h3>¿Qué es InfoBank?</h3>
         <p>
-          InfoBank es la plataforma centralizada de <strong>[Nombre de tu Empresa]</strong> diseñada 
+          InfoBank es la plataforma centralizada de <strong>Crediservir</strong> diseñada 
           para la gestión del conocimiento y la comunicación interna.
         </p>
         <p>
@@ -149,7 +149,7 @@ export default function AcercaDe() {
         <h3>Equipo Responsable</h3>
         <p>
           Esta plataforma es administrada y mantenida por 
-          <strong> [Luis Villalba y Adrian Ovallos]</strong>.
+          <strong> [Luis Villalba,Adrian Ovallos, Julian Osorio y Ramiro Ascanio]</strong>.
         </p>
         
         <div className="contact-info">
@@ -157,15 +157,15 @@ export default function AcercaDe() {
             Si tienes alguna sugerencia sobre el contenido, nuevas ideas para
             cursos o quieres publicar un anuncio, por favor contacta a:
             <br />
-            <strong>Email:</strong> <a href="mailto:[email.responsable@tuempresa.com]">[email.responsable@tuempresa.com]</a>
+            <strong>Email:</strong> <a href="mailto:[email.responsable@tuempresa.com]">[adrianovallos12@gmail.com]</a>
             <br />
-            <strong>Canal Interno:</strong> [Ej: #canal-de-infobank en Slack/Teams]
+            <strong>Canal Interno:</strong> []
           </p>
         </div>
 
         <div className="version-info">
           <p>InfoBank v1.0.0</p>
-          <p>© {new Date().getFullYear()} [Nombre de tu Empresa]</p>
+          <p>© {new Date().getFullYear()} </p>
         </div>
 
       </main>

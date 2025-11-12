@@ -258,18 +258,6 @@ export default function CursoDetalle() {
     Swal.fire("¡Inscrito!", "Ya puedes ver el contenido del curso.", "success");
   };
 
-  // === COMPLETAR CURSO ===
-  const handleCompletar = async () => {
-    if (!uid) return;
-    const ref = doc(db, "enrolments", `${uid}_${id}`);
-    await updateDoc(ref, {
-      progress: 100,
-      status: "completado",
-      completedAt: serverTimestamp(),
-    });
-    Swal.fire("¡Completado!", "Has terminado el curso.", "success");
-  };
-
   if (!curso) return <p className="loading">Cargando curso...</p>;
 
   const progress = enrol?.progress ?? 0;
@@ -279,6 +267,43 @@ export default function CursoDetalle() {
   const { viewUrl, downloadUrl } = getViewAndDownload(curso.archivoEnlace || "");
   const ext = curso.archivoEnlace?.split("?")[0].match(/\.\w+$/)?.[0] || "";
   const nombreArchivo = `${curso.nombre.replace(/[^\w\-]+/g, "_")}${ext}`;
+
+  // ==================================================================
+  // NUEVAS FUNCIONES DE PROGRESO
+  // ==================================================================
+
+  const handleDocumentClick = async () => {
+    openInNewTab(viewUrl);
+
+    if (isEnrolled && uid && progress < 50) {
+      const ref = doc(db, "enrolments", `${uid}_${id}`);
+      try {
+        await updateDoc(ref, { progress: 50 });
+      } catch (error) {
+        console.error("Error al actualizar progreso (50%):", error);
+      }
+    }
+  };
+
+  const handleVideoClick = async () => {
+    abrirVideoEnPestana(curso.videoUrl);
+
+    if (isEnrolled && uid && progress < 100) {
+      const ref = doc(db, "enrolments", `${uid}_${id}`);
+      try {
+        await updateDoc(ref, {
+          progress: 100,
+          status: "completado",
+          completedAt: serverTimestamp(),
+        });
+      } catch (error) {
+        console.error("Error al actualizar progreso (100%):", error);
+        Swal.fire("Error", "No se pudo guardar tu progreso.", "error");
+      }
+    }
+  };
+
+  // ==================================================================
 
   return (
     <div className="curso-page">
@@ -303,27 +328,19 @@ export default function CursoDetalle() {
         <p className="curso-descripcion">{curso.descripcion}</p>
         <div className="curso-datos">
           <div className="dato-item">
-            <span className="icon">
-              Inscritos
-            </span>
+            <span className="icon">Inscritos</span>
             <strong>{curso.inscritos || 0} / {curso.cupos || "?"}</strong>
           </div>
           <div className="dato-item">
-            <span className="icon">
-              Vencimiento
-            </span>
+            <span className="icon">Vencimiento</span>
             <strong>{curso.fechaLimite || "Sin definir"}</strong>
           </div>
           <div className="dato-item">
-            <span className="icon">
-              Duración
-            </span>
+            <span className="icon">Duración</span>
             <strong>{curso.duracion || "No especificada"}</strong>
           </div>
           <div className="dato-item">
-            <span className="icon">
-              Contenido
-            </span>
+            <span className="icon">Contenido</span>
             <strong>Video + Documentos</strong>
           </div>
         </div>
@@ -333,7 +350,7 @@ export default function CursoDetalle() {
           <div className="curso-documentos">
             <h4 style={{ margin: "16px 0 8px" }}>Material de Apoyo</h4>
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <button className="btn btn--view" onClick={() => openInNewTab(viewUrl)}>
+              <button className="btn btn--view" onClick={handleDocumentClick}>
                 Ver Documento
               </button>
               <button className="btn btn--download" onClick={() => forceDownload(downloadUrl, nombreArchivo)}>
@@ -347,9 +364,10 @@ export default function CursoDetalle() {
         {isEnrolled && (
           <div className="progreso">
             <div className="progress-bar">
-              <div className="progress-bar__fill" style={{ width: `${progress}%` }} />
+              <div className="progress-bar__fill" style={{ width: `${progress}%` }}>
+                {progress}%
+              </div>
             </div>
-            <span className="progress-label">Progreso: {progress}%</span>
           </div>
         )}
 
@@ -364,23 +382,19 @@ export default function CursoDetalle() {
               <>
                 <button
                   className="btn-ver"
-                  onClick={() => abrirVideoEnPestana(curso.videoUrl)}
+                  onClick={handleVideoClick}
                   disabled={!curso.videoUrl}
                 >
                   Ir al Video
                 </button>
+
                 <button
                   className="btn-eval"
-                  disabled={progress < 100 || !curso.evaluacionUrl}
-                  onClick={() => openInNewTab(curso.evaluacionUrl)}
+                  disabled={progress < 100 || !curso.enlaceEvaluacion}
+                  onClick={() => openInNewTab(curso.enlaceEvaluacion)}
                 >
                   Presentar Evaluación
                 </button>
-                {progress < 100 && (
-                  <button className="btn-completar" onClick={handleCompletar}>
-                    Marcar como Completado
-                  </button>
-                )}
               </>
             ) : (
               <button className="btn-inscribirse" onClick={handleInscribirme}>
