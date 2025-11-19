@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
-
 import {
-  collection,
-  addDoc,
-  onSnapshot,
-  setDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp,
-  query,
-  where,
-  orderBy,
+  collection, addDoc, onSnapshot, setDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, where, orderBy,
 } from "firebase/firestore";
 import {
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-  signOut,
+  createUserWithEmailAndPassword, sendEmailVerification, signOut,
 } from "firebase/auth";
-import { auth, db, storage } from "../../firebaseConfig";
+import { auth, db } from "../../firebaseConfig";
 import { useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
+import Calendario from "../Calendario/Calendario"; // ← AQUÍ
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import listPlugin from '@fullcalendar/list';
+import esLocale from '@fullcalendar/core/locales/es';
+
+// import Tabs from '@mui/material/Tabs';
+// import Tab from '@mui/material/Tab';
+// import Box from '@mui/material/Box';
 
 
 export default function AdminDashboard() {
@@ -572,16 +570,16 @@ export default function AdminDashboard() {
     }
   };
 
- const handleToggleBloqueo = async (u) => {
-  const nuevoEstado = u.estado === "Inactivo" ? "Activo" : "Inactivo";
-  
-  await updateDoc(doc(db, "usuarios", u.id), { 
-    estado: nuevoEstado,
-    bloqueadoEn: nuevoEstado === "Inactivo" ? new Date() : null
-  });
+  const handleToggleBloqueo = async (u) => {
+    const nuevoEstado = u.estado === "Inactivo" ? "Activo" : "Inactivo";
 
-  // El usuario será expulsado automáticamente en < 2 segundos
-};
+    await updateDoc(doc(db, "usuarios", u.id), {
+      estado: nuevoEstado,
+      bloqueadoEn: nuevoEstado === "Inactivo" ? new Date() : null
+    });
+
+    // El usuario será expulsado automáticamente en < 2 segundos
+  };
 
   const handleEliminarUsuario = async (u) => {
     const ok = await Swal.fire({ title: `¿Eliminar a ${u.nombre}?`, icon: "warning", showCancelButton: true });
@@ -830,6 +828,13 @@ export default function AdminDashboard() {
             <span>Publicadas</span>
           </div>
         </div>
+        <div className="stat stat--yellow">
+          <div className="stat__icon">📅</div>
+          <div>
+            <h3>Calendario</h3>
+            <span>Evento publicados</span>
+          </div>
+        </div>
         <div className="stat stat--teal">
           <div className="stat__icon">📋</div>
           <div>
@@ -857,10 +862,15 @@ export default function AdminDashboard() {
         <button className={`tab-btn ${tab === "noticias" ? "active" : ""}`} onClick={() => setTab("noticias")}>
           Noticias
         </button>
+        <button className={`tab-btn ${tab === "calendario" ? "active" : ""}`} onClick={() => setTab("calendario")}>
+          Calendario
+        </button>
         <button className={`tab-btn ${tab === "muro" ? "active" : ""}`} onClick={() => setTab("muro")}>
           Muro Informativo
         </button>
       </div>
+     
+
 
       {/* CONTENT */}
       <div className="tab-content">
@@ -885,7 +895,7 @@ export default function AdminDashboard() {
                     <p>{c.descripcion}</p>
                     <small>Duración: {c.duracion}</small><br />
                     <small>Fecha Límite: {c.fechaLimite}</small><br />
-                    
+
                     {/*
                      * ===================================================
                      * AQUÍ ESTÁ EL CAMBIO
@@ -1065,12 +1075,12 @@ export default function AdminDashboard() {
                       Último acceso: {" "}
                       {u.ultimoAcceso
                         ? u.ultimoAcceso.toDate().toLocaleString("es-CO", {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
                         : "Nunca"}
                     </p>
                   </div>
@@ -1126,6 +1136,26 @@ export default function AdminDashboard() {
             ))}
           </section>
         )}
+
+        {/* CALENDARIO */}
+      {tab === "calendario" && (
+        <section className="calendario-section">
+          <div className="courses__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2>Calendario de Eventos</h2>
+          </div>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '1.5rem',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+            marginTop: '1rem'
+          }}>
+            <Calendario />
+          </div>
+          
+          
+        </section>
+      )}
 
         {/* ===== NOTIFICACIONES ===== */}
         {tab === "notis" && (

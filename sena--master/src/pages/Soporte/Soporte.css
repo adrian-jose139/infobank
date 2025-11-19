@@ -1,12 +1,20 @@
+/* ======= 🖌 ESTILOS GENERALES (BODY) ======= */
+body {
+  background-color: #f9fafb;
+  transition: background-color 0.3s ease;
+}
+
 /* 🎨 CONTENEDOR PRINCIPAL */
 .soporte-container {
-  max-width: 1000px;
-  margin: 0 auto;
+  /* max-width: 1000px; <-- ELIMINADO */
+  /* margin: 0 auto;     <-- ELIMINADO */
   padding: 20px;
   background-color: #f9fafb;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
+  /* Hacemos que tenga al menos el alto de la pantalla */
+  min-height: 100vh; 
 }
 
 /* 📊 CABECERA */
@@ -182,6 +190,8 @@
 @media (max-width: 768px) {
   .soporte-container {
     padding: 14px;
+    /* Quita el borde redondeado en móvil para que se vea 100% */
+    border-radius: 0;
   }
 
   .form-soporte {
@@ -219,4 +229,118 @@
 
 .btn-volver:hover {
   background: #1e40af;
+}
+
+/* ======= 🌙 MODO OSCURO ======= */
+@media (prefers-color-scheme: dark) {
+
+  /* 🎨 FONDO Y CONTENEDOR PRINCIPAL */
+  body {
+    background-color: #1f2937;
+  }
+
+  .soporte-container {
+    background-color: #1f2937;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid #374151;
+  }
+
+  /* 📊 CABECERA Y TEXTO GENERAL */
+  .soporte-container h2 {
+    color: #f9fafb;
+  }
+
+  .soporte-container p {
+    color: #9ca3af;
+  }
+
+  /* ======= TARJETAS DE ESTADO ======= */
+  .stat-pendiente {
+    background: #422006;
+    border: 1px solid #78350f;
+  }
+
+  .stat-respondido {
+    background: #064e3b;
+    border: 1px solid #047857;
+  }
+
+  .stat-pendiente h4,
+  .stat-respondido h4 {
+    color: #f9fafb;
+  }
+
+  .stat-pendiente p,
+  .stat-respondido p {
+    color: #e5e7eb;
+  }
+
+  /* ======= FORMULARIO ======= */
+  .form-soporte {
+    background: #1f2937;
+    border: 1px solid #374151;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .form-soporte label {
+    color: #e5e7eb;
+  }
+
+  .form-soporte input,
+  .form-soporte textarea {
+    background: #374151;
+    border: 1px solid #4b5563;
+    color: #f9fafb;
+  }
+
+  .form-soporte input:focus,
+  .form-soporte textarea:focus {
+    border-color: #2563eb;
+    background: #1f2937;
+  }
+
+  /* ======= HISTORIAL ======= */
+  .msg-card {
+    background: #374151;
+    border: 1px solid #4b5563;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .msg-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    border-color: #525f73;
+  }
+
+  .msg-card h4 {
+    color: #f9fafb;
+  }
+
+  .msg-card p {
+    color: #d1d5db;
+  }
+
+  .msg-card small {
+    color: #9ca3af;
+  }
+
+  /* Estado */
+  .amarillo {
+    color: #facc15;
+  }
+
+  .verde {
+    color: #4ade80;
+  }
+
+  /* ======= RESPUESTA DEL ADMIN ======= */
+  .respuesta {
+    background: #064e3b;
+    border-left: 4px solid #22c55e;
+  }
+
+  .respuesta p {
+    color: #a7f3d0;
+  }
+
 }

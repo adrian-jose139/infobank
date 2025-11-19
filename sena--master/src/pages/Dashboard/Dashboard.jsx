@@ -1,8 +1,14 @@
 // src/pages/Dashboard.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
-import { auth } from "../../firebaseConfig"; // Asegúrate de que la ruta sea correcta
+import { auth, db } from "../../firebaseConfig";
+import { collection, onSnapshot } from "firebase/firestore";
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import listPlugin from '@fullcalendar/list';
+import esLocale from '@fullcalendar/core/locales/es';
 import "./Dashboard.css";
 
 // DATOS ESTÁTICOS PARA EL PANEL
@@ -11,183 +17,118 @@ const staticNotifications = [
     id: 1,
     title: "Recordatorios de Cursos",
     description: "Te recordaremos las fechas límite de tus cursos inscritos.",
-    icon: "📚",
+    icon: "book",
   },
   {
     id: 2,
     title: "Alertas de Noticias Urgentes",
     description: "Recibe notificaciones inmediatas sobre comunicados urgentes.",
-    icon: "❗",
+    icon: "alert",
   },
   {
     id: 3,
     title: "Actualizaciones del Sistema",
     description: "Mantente informado sobre mantenimientos y nuevas funciones.",
-    icon: "⚙️",
+    icon: "gear",
   },
 ];
 
 // COMPONENTE DE ESTILOS
 const NotificationStyles = () => (
   <style>{`
-    /* --- 🔔 ESTILOS DE NOTIFICACIÓN --- */
-    
-    /* Contenedor de acciones en la barra superior */
-    .dash__actions {
-      position: relative; /* Necesario para el posicionamiento del dropdown */
-      display: flex;
-      align-items: center;
-      gap: 12px; /* Espacio entre botones */
-    }
-
-    /* Área de la campana (para posicionar el panel) */
-    .notification-area {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    /* Botón de campana (reutiliza tus clases y añade una para el icono) */
-    .btn--icon {
-      padding: 8px 10px; /* Ajusta el padding para el icono */
-      line-height: 0; /* Ayuda a centrar el SVG */
-    }
-
-    /* El panel desplegable */
+    /* --- ESTILOS DE NOTIFICACIÓN --- */
+    .dash__actions { position: relative; display: flex; align-items: center; gap: 12px; }
+    .notification-area { position: relative; display: flex; align-items: center; }
+    .btn--icon { padding: 8px 10px; line-height: 0; }
     .notifications-dropdown {
-      position: absolute;
-      top: 130%; /* Justo debajo de la campana (ajusta si es necesario) */
-      right: 0;
-      width: 340px;
-      background-color: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      border: 1px solid #eee;
-      z-index: 1000;
-      overflow: hidden; /* Para que los bordes redondeados se apliquen a los hijos */
+      position: absolute; top: 130%; right: 0; width: 340px; background-color: #ffffff;
+      border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); border: 1px solid #eee; z-index: 1000; overflow: hidden;
     }
+    .notifications-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; background-color: #fcfcfc; }
+    .notifications-header h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+    .notifications-header button { background: none; border: none; font-size: 1.5rem; font-weight: 300; color: #888; cursor: pointer; }
+    .notifications-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
+    .notification-item { display: flex; align-items: flex-start; padding: 16px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.2s; }
+    .notification-item:last-child { border-bottom: none; }
+    .notification-item:hover { background-color: #f9f9f9; }
+    .notification-icon { font-size: 1.5rem; margin-right: 12px; margin-top: 2px; }
+    .notification-content strong { display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 4px; }
+    .notification-content p { font-size: 0.85rem; color: #666; margin: 0; line-height: 1.4; }
 
-    /* Cabecera del panel */
-    .notifications-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid #f0f0f0;
-      background-color: #fcfcfc;
-    }
+    /* --- ESTILOS DEL NUEVO FOOTER --- */
+    .dash__footer { text-align: center; padding: 24px 20px; margin-top: 48px; border-top: 1px solid #f0f0f0; color: #888; font-size: 0.85rem; }
+    .dash__footer nav { display: flex; justify-content: center; gap: 24px; margin-bottom: 12px; }
+    .dash__footer-link { color: #555; font-weight: 500; text-decoration: none; }
+    .dash__footer-link:hover { text-decoration: underline; }
 
-    .notifications-header h3 {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    /* Botón 'x' para cerrar */
-    .notifications-header button {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      font-weight: 300;
-      color: #888;
-      cursor: pointer;
-      padding: 0;
-      line-height: 1;
-    }
-
-    /* Lista de notificaciones */
-    .notifications-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      max-height: 400px;
-      overflow-y: auto;
-    }
-
-    /* Cada ítem de notificación */
-    .notification-item {
-      display: flex;
-      align-items: flex-start;
-      padding: 16px;
-      border-bottom: 1px solid #f0f0f0;
-      transition: background-color 0.2s;
-    }
-
-    .notification-item:last-child {
-      border-bottom: none;
-    }
-
-    .notification-item:hover {
-      background-color: #f9f9f9;
-    }
-
-    /* El ícono (emoji) */
-    .notification-icon {
-      font-size: 1.5rem;
-      margin-right: 12px;
-      margin-top: 2px;
-    }
-
-    /* El texto */
-    .notification-content {
-      flex: 1;
-    }
-
-    .notification-content strong {
-      display: block;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 4px;
-    }
-
-    .notification-content p {
-      font-size: 0.85rem;
-      color: #666;
-      margin: 0;
-      line-height: 1.4;
-    }
-
-    /* --- 👣 ESTILOS DEL NUEVO FOOTER --- */
-
-    .dash__footer {
-      text-align: center;
-      padding: 24px 20px;
-      margin-top: 48px; /* Espacio para separarlo del contenido */
-      border-top: 1px solid #f0f0f0; /* Una línea sutil de separación */
-      color: #888; /* Color de texto grisáceo */
-      font-size: 0.85rem;
-    }
-
-    .dash__footer nav {
-      display: flex;
-      justify-content: center;
-      gap: 24px; /* Espacio entre enlaces */
-      margin-bottom: 12px;
-    }
-
-    .dash__footer-link {
-      color: #555; /* Un color de enlace un poco más oscuro */
-      font-weight: 500;
-      text-decoration: none;
-    }
-
-    .dash__footer-link:hover {
-      text-decoration: underline;
-    }
-
-    .dash__footer p {
-      margin: 0;
+    /* --- COLORES DE TARJETAS --- */
+    .card--teal {
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
     }
   `}</style>
 );
 
+// COMPONENTE CALENDARIO EN TARJETA (REUTILIZADO EN MODAL)
+function CalendarCard() {
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    const q = collection(db, 'calendario');
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const eventos = snapshot.docs.map(doc => ({
+        id: doc.id,
+        title: doc.data().title || 'Sin título',
+        start: doc.data().start?.toDate(),
+        end: doc.data().end?.toDate(),
+        allDay: doc.data().allDay || false,
+        description: doc.data().description || ''
+      }));
+      setEvents(eventos);
+    }, (error) => {
+      console.error("Error cargando calendario:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <article style={{
+      background: 'white',
+      borderRadius: '12px',
+      padding: '16px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+      height: '100%'
+    }}>
+      <h3 style={{ margin: '0 0 12px', fontSize: '1.1rem', color: '#2c3e50' }}>
+        Calendario de Eventos
+      </h3>
+      <FullCalendar
+        plugins={[dayGridPlugin, timeGridPlugin, listPlugin]}
+        initialView="dayGridMonth"
+        headerToolbar={{
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,listWeek'
+        }}
+        locale={esLocale}
+        events={events}
+        height="100%"
+        eventColor="#3498db"
+        eventTextColor="white"
+        displayEventTime={true}
+        nowIndicator={true}
+        editable={false}
+        selectable={false}
+      />
+    </article>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
-  // ESTADO PARA CONTROLAR EL PANEL
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false); // ← NUEVO ESTADO
 
-  // función de cierre de sesión correcta
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -201,7 +142,6 @@ export default function Dashboard() {
 
   return (
     <main className="dash">
-      {/* INYECTAMOS LOS ESTILOS */}
       <NotificationStyles />
 
       <header className="dash__topbar">
@@ -212,9 +152,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* 🔹 Botones de acción */}
         <div className="dash__actions">
-
           <Link className="btn btn--profile" to="/perfil">
             <UserIcon /> Mi Perfil
           </Link>
@@ -225,7 +163,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Tarjetas principales */}
+      {/* GRID DE TARJETAS */}
       <section className="dash__grid" aria-label="Accesos principales">
         <Card
           color="blue"
@@ -252,6 +190,30 @@ export default function Dashboard() {
           icon={<MuroIcon />}
         />
 
+        {/* NUEVA TARJETA: CALENDARIO */}
+        <article 
+          className="card card--teal"
+          style={{ cursor: 'pointer' }}
+          onClick={() => setShowCalendarModal(true)}
+        >
+          <div className="card__icon" aria-hidden="true">
+            <CalendarIcon />
+          </div>
+          <h3 className="card__title">Calendario</h3>
+          <p className="card__desc">
+            Revisa fechas importantes, capacitaciones y eventos del banco
+          </p>
+          <button 
+            className="btn btn--cta"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowCalendarModal(true);
+            }}
+          >
+            Ver Calendario
+          </button>
+        </article>
+
         <Card
           color="orange"
           title="Configuración"
@@ -262,11 +224,85 @@ export default function Dashboard() {
         />
       </section>
 
-      {/* ELIMINAMOS LA SECCIÓN "QUICK" DE AQUÍ:
-        <section className="quick">...</section>
-      */}
-      
-      {/* --- 👣 NUEVO FOOTER --- */}
+      {/* MODAL DEL CALENDARIO */}
+      {/* MODAL DEL CALENDARIO - AHORA SE VE COMPLETO */}
+{showCalendarModal && (
+  <div 
+    style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0,0,0,0.85)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 2000,
+      padding: '1rem'
+    }}
+    onClick={() => setShowCalendarModal(false)}
+  >
+    <div 
+      style={{
+        background: 'white',
+        borderRadius: '16px',
+        width: '95%',
+        maxWidth: '1100px',
+        height: '90vh',           // ← Altura fija
+        maxHeight: '800px',
+        overflow: 'hidden',
+        boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+      onClick={e => e.stopPropagation()}
+    >
+      {/* CABECERA */}
+      <div style={{
+        padding: '1.2rem 1.8rem',
+        borderBottom: '1px solid #eee',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        background: '#f8f9fa',
+        flexShrink: 0
+      }}>
+        <h2 style={{ 
+          margin: 0, 
+          color: '#2c3e50', 
+          fontSize: '1.5rem',
+          fontWeight: '600'
+        }}>
+          Calendario de Eventos
+        </h2>
+        <button
+          onClick={() => setShowCalendarModal(false)}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '2rem',
+            cursor: 'pointer',
+            color: '#999',
+            fontWeight: '300',
+            padding: '0 4px'
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* CALENDARIO - CRECE AL 100% */}
+      <div style={{ 
+        flex: 1, 
+        minHeight: 0, 
+        padding: '1rem',
+        overflow: 'hidden'
+      }}>
+        <CalendarCard />
+      </div>
+    </div>
+  </div>
+)}
+
+      {/* FOOTER */}
       <footer className="dash__footer">
         <nav>
           <Link to="/soporte" className="dash__footer-link">
@@ -284,6 +320,7 @@ export default function Dashboard() {
   );
 }
 
+// COMPONENTE CARD
 function Card({ icon, title, desc, cta, to, color = "blue" }) {
   return (
     <article className={`card card--${color}`}>
@@ -299,9 +336,7 @@ function Card({ icon, title, desc, cta, to, color = "blue" }) {
   );
 }
 
-/* ===== Iconos SVG ===== */
-
-// NUEVO ÍCONO DE CAMPANA
+/* ===== ICONOS SVG ===== */
 function BellIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -341,11 +376,26 @@ function CogIcon() {
     </svg>
   );
 }
-// 🔹 Ícono para el Muro Informativo
+
 function MuroIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
       <path d="M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.67 0-8 1.34-8 4v2h10v-2c0-1.86 1.28-3.41 3.2-4A13.86 13.86 0 0 0 8 13Zm8 0a9.59 9.59 0 0 0-2.54.34 6 6 0 0 1 2.54 4.66V19h8v-2c0-2.66-5.33-4-8-4Z" />
+    </svg>
+  );
+}
+
+// ÍCONO DEL CALENDARIO
+function CalendarIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+      <rect x="7" y="11" width="2" height="2"/>
+      <rect x="11" y="11" width="2" height="2"/>
+      <rect x="15" y="11" width="2" height="2"/>
+      <rect x="7" y="15" width="2" height="2"/>
+      <rect x="11" y="15" width="2" height="2"/>
+      <rect x="15" y="15" width="2" height="2"/>
     </svg>
   );
 }

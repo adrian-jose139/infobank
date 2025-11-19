@@ -229,11 +229,11 @@ body {
 .btn-ver:hover {
   background-color: #15803d;
 }
-.btn-ver:disabled {
+/* .btn-ver:disabled {
   background-color: #9ca3af;
   cursor: not-allowed;
   opacity: 0.7;
-}
+} */
 
 /* --- Botón EVALUACIÓN (Estado Habilitado) --- */
 .btn-eval {
@@ -246,8 +246,36 @@ body {
 
 /* --- Botón EVALUACIÓN (Estado Deshabilitado) --- */
 /* Esto anula el estilo anterior cuando el botón tiene el atributo 'disabled' */
+/* ========================================= */
+/* === FIX FINAL: BOTÓN EVALUACIÓN DESHABILITADO === */
+/* ========================================= */
+
+.btn-eval:disabled,
 .btn-eval[disabled] {
-  background-color: #9ca3af; /* Tu gris original */
-  cursor: not-allowed;
-  opacity: 0.7; /* Más claro para que se vea deshabilitado */
+  background-color: #9ca3af !important;   /* Gris claro */
+  color: #e5e7eb !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+  pointer-events: none;                   /* Evita que haga hover */
+}
+
+.btn-eval:disabled:hover,
+.btn-eval[disabled]:hover {
+  background-color: #9ca3af !important;
+}
+
+/* Opcional: efecto más bonito cuando está habilitado (100%) */
+.btn-eval:not(:disabled) {
+  background-color: #1d4ed8;
+}
+.btn-eval:not(:disabled):hover {
+  background-color: #1e40af;
+}
+
+/* Bonus: también arreglamos el botón de video por si acaso */
+.btn-ver:disabled,
+.btn-ver[disabled] {
+  background-color: #9ca3af !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
 }

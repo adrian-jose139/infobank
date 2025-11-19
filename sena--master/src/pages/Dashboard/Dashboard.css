@@ -195,3 +195,11 @@ html, body {
   background:#f9fafb;
   box-shadow: 0 4px 14px rgba(16,24,40,.06);
 }
+
+/* --- COLORES DE TARJETAS --- */
+.card--teal {
+  background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
+}
+.card--teal .btn--cta {
+  background: #16a085;
+}

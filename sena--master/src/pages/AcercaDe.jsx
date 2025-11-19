@@ -2,17 +2,24 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-// 1. COMPONENTE DE ESTILOS (igual que en tu Dashboard)
+// 1. COMPONENTE DE ESTILOS (Modificado con 100% de ancho y Modo Oscuro)
 const AcercaDeStyles = () => (
   <style>{`
-    /* Contenedor principal de la página */
+    /* 🖌 Estilo de Body (Modo Claro) */
+    body {
+      background-color: #ffffff;
+      transition: background-color 0.3s ease;
+    }
+
+    /* Contenedor principal de la página (Modificado para 100% ancho) */
     .acerca-de-page {
-      max-width: 800px;
-      margin: 40px auto; /* Centrado y con espacio */
+      /* max-width: 800px; <-- Eliminado */
+      /* margin: 40px auto; <-- Eliminado */
+      min-height: 100vh; /* <-- Añadido para ocupar toda la altura */
       padding: 32px;
       background-color: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      /* border-radius: 12px; <-- Eliminado */
+      /* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); <-- Eliminado */
       color: #333;
       line-height: 1.6;
     }
@@ -72,13 +79,13 @@ const AcercaDeStyles = () => (
       color: #aaa;
     }
 
-    /* Botón de volver (reutiliza clases si las tienes, si no, usa estas) */
+    /* Botón de volver */
     .btn--back {
       display: inline-block;
       font-size: 0.9rem;
       font-weight: 600;
       color: #555;
-      background-color: #2563eb;
+      background-color: #f0f0f0;
       border: none;
       padding: 10px 16px;
       border-radius: 6px;
@@ -90,6 +97,77 @@ const AcercaDeStyles = () => (
 
     .btn--back:hover {
       background-color: #e5e5e5;
+    }
+
+    /* Responsive: Hacemos el padding más pequeño en móviles */
+    @media (max-width: 768px) {
+      .acerca-de-page {
+        padding: 20px;
+      }
+      .acerca-de-page h1 {
+        font-size: 1.75rem;
+      }
+    }
+
+
+    /* ======= 🌙 MODO OSCURO (Añadido) ======= */
+    @media (prefers-color-scheme: dark) {
+      /* 🎨 FONDO Y CONTENEDOR PRINCIPAL */
+      body {
+        background-color: #1f2937;
+      }
+
+      .acerca-de-page {
+        background-color: #1f2937;
+        color: #d1d5db; /* Color de texto base */
+      }
+
+      /* 📊 CABECERA Y TEXTO */
+      .acerca-de-page h1 {
+        color: #f9fafb;
+        border-bottom-color: #374151; /* Borde oscuro */
+      }
+
+      .acerca-de-page h3 {
+        color: #e5e7eb;
+      }
+
+      .acerca-de-page p,
+      .acerca-de-page li {
+        color: #d1d5db; /* Texto general */
+      }
+      
+      .acerca-de-page a {
+          color: #60a5fa; /* Enlaces en modo oscuro */
+      }
+      
+      .acerca-de-page strong {
+          color: #f9fafb;
+      }
+
+      /* ℹ SECCIONES */
+      .acerca-de-page .contact-info {
+        background-color: #374151; /* Fondo de sección */
+        border-color: #4b5563;
+      }
+      
+      .acerca-de-page .contact-info p {
+          color: #d1d5db;
+      }
+
+      .acerca-de-page .version-info {
+        color: #6b7280; /* Texto atenuado */
+      }
+
+      /* ⬅ BOTÓN VOLVER */
+      .btn--back {
+        background-color: #374151;
+        color: #e5e7eb;
+      }
+
+      .btn--back:hover {
+        background-color: #4b5563;
+      }
     }
   `}</style>
 );
